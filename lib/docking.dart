@@ -18,13 +18,21 @@ class DockingWidget extends StatefulWidget {
 
 class _DockingWidgetState extends State<DockingWidget> {
   Future<dynamic> _docking$ = Completer().future;
+  Future<dynamic> _hawsers$ = Completer().future;
+  Future<dynamic> _bollards$ = Completer().future;
 
   @override
   void initState() {
-    _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
+    loadData();
     setState(() {});
 
     super.initState();
+  }
+
+  Future<void> loadData() async {
+    _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
+    _hawsers$ = HawsersInterface.getHawsers();
+    _bollards$ = BollardsInterface.getBollards(widget.berth.berthId);
   }
 
   @override
@@ -36,7 +44,7 @@ class _DockingWidgetState extends State<DockingWidget> {
           bottom: const TabBar(
             indicatorColor: Color(0xFFF38D36),
             tabs: [
-              Tab(text: "Arqueação"),
+              Tab(text: "Calado"),
               Tab(text: "Amarração"),
               // Tab(text: "Mensagens"),
             ],
@@ -66,7 +74,7 @@ class _DockingWidgetState extends State<DockingWidget> {
             ),
             Expanded(
               child: FutureBuilder<dynamic>(
-                future: _docking$,
+                future: Future.wait([_docking$, _hawsers$, _bollards$]),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const Center(
@@ -81,7 +89,7 @@ class _DockingWidgetState extends State<DockingWidget> {
                             Text(snapshot.error.toString()),
                             IconButton(
                                 onPressed: () async {
-                                  _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
+                                  loadData();
                                   setState(() {});
                                 },
                                 icon: const Icon(Icons.refresh))
@@ -90,10 +98,13 @@ class _DockingWidgetState extends State<DockingWidget> {
                       ),
                     );
                   } else if (snapshot.hasData) {
+                    var docking = snapshot.data[0];
+                    var hawsers = snapshot.data[1];
+                    var bollards = snapshot.data[2];
                     return TabBarView(
                       children: [
-                        DrafitingWidget(berth: widget.berth, docking: snapshot.data),
-                        MorringWidget(berth: widget.berth, docking: snapshot.data),
+                        DrafitingWidget(berth: widget.berth, docking: docking),
+                        MorringWidget(berth: widget.berth, docking: docking, hawsers: hawsers, bollards: bollards),
                         // MessagesWidget(berth: widget.berth, docking: snapshot.data),
                       ],
                     );

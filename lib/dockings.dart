@@ -22,6 +22,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
       body: Column(
         children: [
           Image.asset('assets/static_map.png'),
+          const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<dynamic>(
               future: _berths$,
@@ -77,7 +78,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                       itemBuilder: (context, index) {
                         final berth = Berth.fromJson(berthList[index]);
                         return Padding(
-                          padding: const EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                           child: Card(
                             child: InkWell(
                               onTap: () => Navigator.of(context)
@@ -95,10 +96,10 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                                         Text(berth.berthName)
                                       ],
                                     ),
-                                    IconButton(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.chevron_right),
-                                    )
+                                    const Padding(
+                                      padding: EdgeInsets.all(10),
+                                      child: Icon(Icons.chevron_right),
+                                    ),
                                   ],
                                 ),
                               ),

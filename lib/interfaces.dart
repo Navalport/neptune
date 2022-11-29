@@ -96,11 +96,11 @@ class RequestInterface {
 
 class BerthInterface with RequestInterface {
   static Future<dynamic> getBerths() async {
-    // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
+    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
 
     var lineup = await RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/lineup");
-    var shortlinup = (lineup as List).length > 5 ? lineup.sublist(0, 5) : lineup;
-    return shortlinup
+    // var shortlinup = (lineup as List).length > 5 ? lineup.sublist(0, 5) : lineup;
+    return lineup
         .map((e) => ({
               'docking_id': e['docking_id'],
               'eta': e['eta'],
@@ -126,7 +126,31 @@ class DockingInterface with RequestInterface {
     return RequestInterface._makeRequest("POST", "/docking/$dockingId/drafting", jsonEncode(data));
   }
 
-  static Future<dynamic> postMorring(int dockingId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/docking/$dockingId/morring", jsonEncode(data));
+  static Future<dynamic> deleteDrafting(int dockingId, int draftingId) async {
+    return RequestInterface._makeRequest("DELETE", "/docking/$dockingId/drafting/$draftingId");
+  }
+
+  static Future<dynamic> postMooring(int dockingId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("POST", "/docking/$dockingId/mooring", jsonEncode(data));
+  }
+
+  static Future<dynamic> patchMooring(int dockingId, int mooringId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("PATCH", "/docking/$dockingId/mooring/$mooringId", jsonEncode(data));
+  }
+
+  static Future<dynamic> deleteMooring(int dockingId, int mooringId) async {
+    return RequestInterface._makeRequest("DELETE", "/docking/$dockingId/mooring/$mooringId");
+  }
+}
+
+class HawsersInterface with RequestInterface {
+  static Future<dynamic> getHawsers() async {
+    return RequestInterface._makeRequest("GET", "/model/hawsers");
+  }
+}
+
+class BollardsInterface with RequestInterface {
+  static Future<dynamic> getBollards(int berthId) async {
+    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/bollards/$berthId");
   }
 }

@@ -37,6 +37,7 @@ class MyApp extends StatelessWidget {
         radioTheme: RadioThemeData(
             fillColor: MaterialStateColor.resolveWith((states) =>
                 states.contains(MaterialState.selected) ? const Color(0xFFF38D36) : const Color(0xFFE4F8EF))),
+        dialogBackgroundColor: const Color(0xFF32353B),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Color(0xFF292B2F),
