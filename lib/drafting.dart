@@ -242,7 +242,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                     'docking_id': widget.berth.dockingId,
                                     'assign_id': 1,
                                     't': _dateTime?.toIso8601String(),
-                                    'draft': int.parse(_draftController.text.toString()),
+                                    'draft': double.parse(_draftController.text.toString()),
                                     'pos': EnumToString.convertToString(_position),
                                     'stage': EnumToString.convertToString(_stage),
                                   }).onError((error, stackTrace) {

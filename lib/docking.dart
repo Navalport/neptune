@@ -6,6 +6,7 @@ import 'package:neptune/interfaces.dart';
 import 'package:neptune/messages.dart';
 import 'package:neptune/mooring.dart';
 import 'package:neptune/drafting.dart';
+import 'package:neptune/tethers.dart';
 import 'package:neptune/types.dart';
 
 class DockingWidget extends StatefulWidget {
@@ -38,7 +39,7 @@ class _DockingWidgetState extends State<DockingWidget> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: DefaultAppBar(
           bottom: const TabBar(
@@ -46,6 +47,7 @@ class _DockingWidgetState extends State<DockingWidget> {
             tabs: [
               Tab(text: "Calado"),
               Tab(text: "Amarração"),
+              Tab(text: "Cabos"),
               // Tab(text: "Mensagens"),
             ],
           ),
@@ -105,6 +107,7 @@ class _DockingWidgetState extends State<DockingWidget> {
                       children: [
                         DrafitingWidget(berth: widget.berth, docking: docking),
                         MorringWidget(berth: widget.berth, docking: docking, hawsers: hawsers, bollards: bollards),
+                        TethersWidget(berth: widget.berth, docking: docking, hawsers: hawsers, bollards: bollards),
                         // MessagesWidget(berth: widget.berth, docking: snapshot.data),
                       ],
                     );

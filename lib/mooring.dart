@@ -101,35 +101,6 @@ class _MorringWidgetState extends State<MorringWidget> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            flex: 1,
-                            child: TextFormField(
-                              validator: (value) => value!.isEmpty ? 'Requerido' : null,
-                              controller: _dateTimeController,
-                              decoration: const InputDecoration(
-                                labelText: "Data",
-                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                              ),
-                              keyboardType: TextInputType.datetime,
-                              readOnly: true,
-                              showCursor: true,
-                              onTap: () {
-                                DatePicker.showDateTimePicker(
-                                  context,
-                                  currentTime: _dateTime,
-                                  locale: LocaleType.pt,
-                                ).then(
-                                  (value) {
-                                    setState(() {
-                                      _dateTimeController.text = value?.toString() ?? _dateTimeController.text;
-                                      _dateTime = value ?? _dateTime;
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                          ),
                         ],
                       ),
                     ),
