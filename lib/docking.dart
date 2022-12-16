@@ -36,6 +36,12 @@ class _DockingWidgetState extends State<DockingWidget> {
     _bollards$ = BollardsInterface.getBollards(widget.berth.berthId);
   }
 
+  Future<void> refreshDocking() async {
+    _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
+    await _docking$;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -106,8 +112,18 @@ class _DockingWidgetState extends State<DockingWidget> {
                     return TabBarView(
                       children: [
                         DrafitingWidget(berth: widget.berth, docking: docking),
-                        MorringWidget(berth: widget.berth, docking: docking, hawsers: hawsers, bollards: bollards),
-                        TethersWidget(berth: widget.berth, docking: docking, hawsers: hawsers, bollards: bollards),
+                        MorringWidget(
+                            berth: widget.berth,
+                            docking: docking,
+                            hawsers: hawsers,
+                            bollards: bollards,
+                            callback: refreshDocking),
+                        TethersWidget(
+                            berth: widget.berth,
+                            docking: docking,
+                            hawsers: hawsers,
+                            bollards: bollards,
+                            callback: refreshDocking),
                         // MessagesWidget(berth: widget.berth, docking: snapshot.data),
                       ],
                     );

@@ -1,19 +1,32 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
 import 'package:neptune/interfaces.dart';
 import 'package:neptune/types.dart';
+
+extension Unique<E, Id> on List<E> {
+  List<E> unique([Id Function(E element)? id, bool inplace = true]) {
+    final ids = Set();
+    var list = inplace ? this : List<E>.from(this);
+    list.retainWhere((x) => ids.add(id != null ? id(x) : x as Id));
+    return list;
+  }
+}
 
 class TethersWidget extends StatefulWidget {
   final Berth berth;
   final dynamic docking;
   final List<dynamic> hawsers, bollards;
+  final Function callback;
 
   const TethersWidget(
-      {Key? key, required this.berth, required this.docking, required this.hawsers, required this.bollards})
+      {Key? key,
+      required this.berth,
+      required this.docking,
+      required this.hawsers,
+      required this.bollards,
+      required this.callback})
       : super(key: key);
 
   @override
@@ -22,17 +35,51 @@ class TethersWidget extends StatefulWidget {
 
 class _TethersWidgetState extends State<TethersWidget> {
   DateTime? _tieFirstDateTime, _tieLastDateTime, _untieFirstDateTime, _untieLastDateTime;
-  dynamic _tieFirstBollard, _tieLastBollard, _untieFirstBollard, _untieLastBollard, _bowBollard, _sternBollard;
+  dynamic _tieFirstMooring, _tieLastMooring, _untieFirstMooring, _untieLastMooring, _bowMooring, _sternMooring;
   final _bowController = TextEditingController();
   final _sternController = TextEditingController();
   final _tieFirstController = TextEditingController();
   final _tieLastController = TextEditingController();
   final _untieFirstController = TextEditingController();
   final _untieLastController = TextEditingController();
-  List<bool> _inProgress = List.filled(6, false);
+  final List<bool> _inProgress = List.filled(6, false);
+  final List<bool> _isSet = List.filled(6, false);
+  List<dynamic>? _mooringList;
 
   @override
   void initState() {
+    _mooringList = widget.docking['mooring']?.reversed.toList();
+
+    _tieFirstMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("FirstTie") ?? false, orElse: () => null);
+    _isSet[0] = _tieFirstMooring != null;
+    _tieFirstController.text = _tieFirstMooring?["tied_at"] ?? "";
+
+    _tieLastMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("LastTie") ?? false, orElse: () => null);
+    _isSet[1] = _tieLastMooring != null;
+    _tieLastController.text = _tieLastMooring?["tied_at"] ?? "";
+
+    _bowMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("BowDistance") ?? false, orElse: () => null);
+    _isSet[2] = _bowMooring != null;
+    _bowController.text = _bowMooring?["distance"].toString() ?? "";
+
+    _sternMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("SternDistance") ?? false, orElse: () => null);
+    _isSet[3] = _sternMooring != null;
+    _sternController.text = _sternMooring?["distance"].toString() ?? "";
+
+    _untieFirstMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("FirstUntie") ?? false, orElse: () => null);
+    _isSet[4] = _untieFirstMooring != null;
+    _untieFirstController.text = _untieFirstMooring?["untied_at"] ?? "";
+
+    _untieLastMooring =
+        _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("LastUntie") ?? false, orElse: () => null);
+    _isSet[5] = _untieLastMooring != null;
+    _untieLastController.text = _untieLastMooring?["untied_at"] ?? "";
+
     super.initState();
   }
 
@@ -71,19 +118,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _tieFirstBollard,
+                        value: _tieFirstMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
-                          labelText: "Primeiro Cabeço",
+                          labelText: "Primeiro Cabo",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
-                            .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
+                        items: _mooringList
+                            ?.map((e) => DropdownMenuItem<dynamic>(
+                                value: e, child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _tieFirstBollard = val;
+                            _tieFirstMooring = val;
                           });
                         },
                       ),
@@ -119,10 +167,29 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[0]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_tieFirstDateTime == null || _tieFirstMooring == null || _isSet[0])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[0] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _tieFirstMooring["mooring_id"], {
+                                      ..._tieFirstMooring,
+                                      "tied_at": _tieFirstDateTime!.toIso8601String(),
+                                      "type": jsonEncode([...(tryDecode(_tieFirstMooring["type"]) ?? []), "FirstTie"])
+                                    });
+                                    await _refreshMorrings(0);
+                                    setState(() {
+                                      _inProgress[0] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -133,19 +200,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _tieLastBollard,
+                        value: _tieLastMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
-                          labelText: "Último Cabeço",
+                          labelText: "Último Cabo",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
-                            .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
+                        items: _mooringList
+                            ?.map((e) => DropdownMenuItem<dynamic>(
+                                value: e, child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _tieLastBollard = val;
+                            _tieLastMooring = val;
                           });
                         },
                       ),
@@ -181,10 +249,29 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[1]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_tieLastDateTime == null || _tieLastMooring == null || _isSet[1])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[1] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _tieLastMooring["mooring_id"], {
+                                      ..._tieLastMooring,
+                                      "tied_at": _tieLastDateTime!.toIso8601String(),
+                                      "type": jsonEncode([...(tryDecode(_tieLastMooring["type"]) ?? []), "LastTie"])
+                                    });
+                                    await _refreshMorrings(1);
+                                    setState(() {
+                                      _inProgress[1] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -205,19 +292,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _bowBollard,
+                        value: _bowMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
                           labelText: "Cabeço",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
+                        items: _mooringList
+                            ?.unique((e) => e['bollard_name'])
                             .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _bowBollard = val;
+                            _bowMooring = val;
                           });
                         },
                       ),
@@ -237,10 +325,29 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[2]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_bowController.text.isEmpty || _bowMooring == null || _isSet[2])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[2] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _bowMooring["mooring_id"], {
+                                      ..._bowMooring,
+                                      "distance": double.parse(_bowController.text),
+                                      "type": jsonEncode([...(tryDecode(_bowMooring["type"]) ?? []), "BowDistance"])
+                                    });
+                                    await _refreshMorrings(2);
+                                    setState(() {
+                                      _inProgress[2] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -251,19 +358,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _sternBollard,
+                        value: _sternMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
                           labelText: "Cabeço",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
+                        items: _mooringList
+                            ?.unique((e) => e['bollard_name'])
                             .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _sternBollard = val;
+                            _sternMooring = val;
                           });
                         },
                       ),
@@ -283,10 +391,29 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[3]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_sternController.text.isEmpty || _sternMooring == null || _isSet[3])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[3] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _sternMooring["mooring_id"], {
+                                      ..._sternMooring,
+                                      "distance": double.parse(_sternController.text),
+                                      "type": jsonEncode([...(tryDecode(_sternMooring["type"]) ?? []), "SternDistance"])
+                                    });
+                                    await _refreshMorrings(3);
+                                    setState(() {
+                                      _inProgress[3] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -307,19 +434,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _untieFirstBollard,
+                        value: _untieFirstMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
-                          labelText: "Primeiro Cabeço",
+                          labelText: "Primeiro Cabo",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
-                            .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
+                        items: _mooringList
+                            ?.map((e) => DropdownMenuItem<dynamic>(
+                                value: e, child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _untieFirstBollard = val;
+                            _untieFirstMooring = val;
                           });
                         },
                       ),
@@ -355,10 +483,30 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[4]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_untieFirstDateTime == null || _untieFirstMooring == null || _isSet[4])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[4] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _untieFirstMooring["mooring_id"], {
+                                      ..._untieFirstMooring,
+                                      "untied_at": _untieFirstDateTime!.toIso8601String(),
+                                      "type":
+                                          jsonEncode([...(tryDecode(_untieFirstMooring["type"]) ?? []), "FirstUntie"])
+                                    });
+                                    await _refreshMorrings(4);
+                                    setState(() {
+                                      _inProgress[4] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -369,19 +517,20 @@ class _TethersWidgetState extends State<TethersWidget> {
                     Flexible(
                       flex: 1,
                       child: DropdownButtonFormField<dynamic>(
-                        value: _untieLastBollard,
+                        value: _untieLastMooring,
                         validator: (value) => value == null ? 'Requerido' : null,
                         dropdownColor: const Color(0xFF292B2F),
                         decoration: const InputDecoration(
-                          labelText: "Último Cabeço",
+                          labelText: "Último Cabo",
                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        items: widget.bollards
-                            .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
+                        items: _mooringList
+                            ?.map((e) => DropdownMenuItem<dynamic>(
+                                value: e, child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
                             .toList(),
                         onChanged: (dynamic val) {
                           setState(() {
-                            _untieLastBollard = val;
+                            _untieLastMooring = val;
                           });
                         },
                       ),
@@ -417,10 +566,29 @@ class _TethersWidgetState extends State<TethersWidget> {
                     ),
                     _inProgress[5]
                         ? const Center(
-                            child: CircularProgressIndicator(),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(),
+                            ),
                           )
                         : IconButton(
-                            onPressed: () {},
+                            onPressed: (_untieLastDateTime == null || _untieLastMooring == null || _isSet[5])
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _inProgress[5] = true;
+                                    });
+                                    await DockingInterface.patchMooring(
+                                        widget.berth.dockingId, _untieLastMooring["mooring_id"], {
+                                      ..._untieLastMooring,
+                                      "untied_at": _untieLastDateTime!.toIso8601String(),
+                                      "type": jsonEncode([...(tryDecode(_untieLastMooring["type"]) ?? []), "LastUntie"])
+                                    });
+                                    await _refreshMorrings(5);
+                                    setState(() {
+                                      _inProgress[5] = false;
+                                    });
+                                  },
                             icon: const Icon(Icons.save),
                           ),
                   ],
@@ -431,5 +599,50 @@ class _TethersWidgetState extends State<TethersWidget> {
         );
       },
     );
+  }
+
+  FutureOr<dynamic> _refreshMorrings(int index) async {
+    await widget.callback();
+    setState(() {
+      _mooringList = widget.docking['mooring']?.reversed.toList();
+
+      _tieFirstMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("FirstTie") ?? false, orElse: () => null);
+      _isSet[0] = _tieFirstMooring != null;
+      _tieFirstController.text = _tieFirstMooring?["tied_at"] ?? "";
+
+      _tieLastMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("LastTie") ?? false, orElse: () => null);
+      _isSet[1] = _tieLastMooring != null;
+      _tieLastController.text = _tieLastMooring?["tied_at"] ?? "";
+
+      _bowMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("BowDistance") ?? false, orElse: () => null);
+      _isSet[2] = _bowMooring != null;
+      _bowController.text = _bowMooring?["distance"].toString() ?? "";
+
+      _sternMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("SternDistance") ?? false, orElse: () => null);
+      _isSet[3] = _sternMooring != null;
+      _sternController.text = _sternMooring?["distance"].toString() ?? "";
+
+      _untieFirstMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("FirstUntie") ?? false, orElse: () => null);
+      _isSet[4] = _untieFirstMooring != null;
+      _untieFirstController.text = _untieFirstMooring?["untied_at"] ?? "";
+
+      _untieLastMooring =
+          _mooringList?.firstWhere((e) => tryDecode(e["type"])?.contains("LastUntie") ?? false, orElse: () => null);
+      _isSet[5] = _untieLastMooring != null;
+      _untieLastController.text = _untieLastMooring?["untied_at"] ?? "";
+    });
+  }
+}
+
+dynamic tryDecode(data) {
+  try {
+    return jsonDecode(data);
+  } catch (e) {
+    return null;
   }
 }

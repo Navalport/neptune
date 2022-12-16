@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+// import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:neptune/docking.dart';
 import 'package:neptune/interfaces.dart';
 import 'package:neptune/types.dart';
 
@@ -11,9 +12,15 @@ class MorringWidget extends StatefulWidget {
   final Berth berth;
   final dynamic docking;
   final List<dynamic> hawsers, bollards;
+  final Function callback;
 
   const MorringWidget(
-      {Key? key, required this.berth, required this.docking, required this.hawsers, required this.bollards})
+      {Key? key,
+      required this.berth,
+      required this.docking,
+      required this.hawsers,
+      required this.bollards,
+      required this.callback})
       : super(key: key);
 
   @override
@@ -24,8 +31,6 @@ class _MorringWidgetState extends State<MorringWidget> {
   final _formKey = GlobalKey<FormState>();
 
   dynamic _hawser, _bollard;
-  DateTime? _dateTime;
-  final _dateTimeController = TextEditingController();
   List<dynamic>? _mooringList;
   bool _inProgress = false;
   bool _refreshing = false;
@@ -38,7 +43,6 @@ class _MorringWidgetState extends State<MorringWidget> {
 
   @override
   void dispose() {
-    _dateTimeController.dispose();
     super.dispose();
   }
 
@@ -135,7 +139,7 @@ class _MorringWidgetState extends State<MorringWidget> {
                                               'assign_id': 1,
                                               'hawser_id': _hawser["hawser_id"],
                                               'bollard_id': _bollard["bollard_id"],
-                                              'tied_at': _dateTime?.toIso8601String(),
+                                              'tied_at': DateTime.now().toIso8601String(),
                                             });
                                             await _refreshMorrings();
                                             setState(() {
@@ -212,7 +216,7 @@ class _MorringWidgetState extends State<MorringWidget> {
                                                   await DockingInterface.patchMooring(
                                                       widget.berth.dockingId,
                                                       mooring["mooring_id"],
-                                                      {...mooring, "untied_at": _dateTime?.toIso8601String()});
+                                                      {...mooring, "untied_at": DateTime.now().toIso8601String()});
                                                   await _refreshMorrings();
                                                   setState(() {
                                                     _inProgress = false;
@@ -257,7 +261,7 @@ class _MorringWidgetState extends State<MorringWidget> {
                                                   await DockingInterface.patchMooring(
                                                       widget.berth.dockingId,
                                                       mooring["mooring_id"],
-                                                      {...mooring, "broken_at": _dateTime?.toIso8601String()});
+                                                      {...mooring, "broken_at": DateTime.now().toIso8601String()});
                                                   await _refreshMorrings();
                                                   setState(() {
                                                     _inProgress = false;
@@ -379,14 +383,6 @@ class _MorringWidgetState extends State<MorringWidget> {
                                                           color: textColor,
                                                         ),
                                                       ),
-                                                      Text(
-                                                        DateFormat("HH:mm dd/MMM")
-                                                            .format(DateTime.parse(mooring['tied_at'])),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
                                                     ],
                                                   ),
                                                 ),
@@ -412,9 +408,10 @@ class _MorringWidgetState extends State<MorringWidget> {
   }
 
   FutureOr<dynamic> _refreshMorrings() async {
-    dynamic docking = await DockingInterface.getDocking(widget.berth.dockingId);
+    await widget.callback();
+    // dynamic docking = await DockingInterface.getDocking(widget.berth.dockingId);
     setState(() {
-      _mooringList = docking['mooring']?.reversed.toList();
+      _mooringList = widget.docking['mooring']?.reversed.toList();
       _inProgress = false;
     });
   }
