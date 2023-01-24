@@ -1,3 +1,6 @@
+import 'package:rxdart/rxdart.dart';
+import 'interfaces.dart';
+
 class Berth {
   int dockingId;
   DateTime eta;
@@ -52,3 +55,37 @@ class Berth {
     return data;
   }
 }
+
+class DockingBehaviorSubject {
+  static final DockingBehaviorSubject _singleton =
+      DockingBehaviorSubject._internal();
+  final BehaviorSubject<dynamic> _dockingController =
+      BehaviorSubject<dynamic>();
+
+  factory DockingBehaviorSubject() {
+    return _singleton;
+  }
+
+  Stream<dynamic> getStream() {
+    return _dockingController.stream;
+  }
+
+  void setValue(dynamic value) {
+    _dockingController.add(value);
+  }
+
+  Future<void> refresh(int dockingId) async {
+    var value = await DockingInterface.getDocking(dockingId);
+    _dockingController.add(value);
+    return;
+  }
+
+  DockingBehaviorSubject._internal();
+}
+
+// enum Boardside {
+//   BE = 1;
+//   BB = 2;
+//   CB = 3;
+//   CBB = 4;
+// }

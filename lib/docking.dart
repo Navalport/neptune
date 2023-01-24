@@ -30,16 +30,16 @@ class _DockingWidgetState extends State<DockingWidget> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    // DockingSingleton
+    super.dispose();
+  }
+
   Future<void> loadData() async {
     _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
     _hawsers$ = HawsersInterface.getHawsers();
     _bollards$ = BollardsInterface.getBollards(widget.berth.berthId);
-  }
-
-  Future<void> refreshDocking() async {
-    _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
-    await _docking$;
-    setState(() {});
   }
 
   @override
@@ -109,21 +109,20 @@ class _DockingWidgetState extends State<DockingWidget> {
                     var docking = snapshot.data[0];
                     var hawsers = snapshot.data[1];
                     var bollards = snapshot.data[2];
+
+                    DockingBehaviorSubject().setValue(docking);
+
                     return TabBarView(
                       children: [
-                        DrafitingWidget(berth: widget.berth, docking: docking),
+                        DrafitingWidget(berth: widget.berth),
                         MorringWidget(
                             berth: widget.berth,
-                            docking: docking,
                             hawsers: hawsers,
-                            bollards: bollards,
-                            callback: refreshDocking),
+                            bollards: bollards),
                         TethersWidget(
                             berth: widget.berth,
-                            docking: docking,
                             hawsers: hawsers,
-                            bollards: bollards,
-                            callback: refreshDocking),
+                            bollards: bollards),
                         // MessagesWidget(berth: widget.berth, docking: snapshot.data),
                       ],
                     );

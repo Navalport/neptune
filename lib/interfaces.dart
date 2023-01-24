@@ -52,7 +52,8 @@ class RequestInterface {
   //   }
   // }
 
-  static Future<dynamic> _makeRequest(String method, String route, [String? body]) async {
+  static Future<dynamic> _makeRequest(String method, String route,
+      [String? body]) async {
     var headers = {
       'Content-Type': 'application/json',
     };
@@ -65,7 +66,8 @@ class RequestInterface {
     request.headers.addAll(headers);
 
     try {
-      http.StreamedResponse response = await request.send(); //.timeout(const Duration(seconds: 5));
+      http.StreamedResponse response =
+          await request.send(); //.timeout(const Duration(seconds: 5));
       String data = await response.stream.bytesToString();
       // return Future.error("falha de teste");
       return json.decode(data);
@@ -96,9 +98,10 @@ class RequestInterface {
 
 class BerthInterface with RequestInterface {
   static Future<dynamic> getBerths() async {
-    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
+    // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
 
-    var lineup = await RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/lineup");
+    var lineup = await RequestInterface._makeRequest(
+        "GET", "/smart/ports/$_portCode/lineup");
     // var shortlinup = (lineup as List).length > 5 ? lineup.sublist(0, 5) : lineup;
     return lineup
         .map((e) => ({
@@ -122,24 +125,38 @@ class DockingInterface with RequestInterface {
     return RequestInterface._makeRequest("GET", "/docking/$dockingId");
   }
 
-  static Future<dynamic> postDrafting(int dockingId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/docking/$dockingId/drafting", jsonEncode(data));
+  static Future<dynamic> patchDocking(
+      int dockingId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest(
+        "PATCH", "/docking/$dockingId", jsonEncode(data));
+  }
+
+  static Future<dynamic> postDrafting(
+      int dockingId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest(
+        "POST", "/docking/$dockingId/drafting", jsonEncode(data));
   }
 
   static Future<dynamic> deleteDrafting(int dockingId, int draftingId) async {
-    return RequestInterface._makeRequest("DELETE", "/docking/$dockingId/drafting/$draftingId");
+    return RequestInterface._makeRequest(
+        "DELETE", "/docking/$dockingId/drafting/$draftingId");
   }
 
-  static Future<dynamic> postMooring(int dockingId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/docking/$dockingId/mooring", jsonEncode(data));
+  static Future<dynamic> postMooring(
+      int dockingId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest(
+        "POST", "/docking/$dockingId/mooring", jsonEncode(data));
   }
 
-  static Future<dynamic> patchMooring(int dockingId, int mooringId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("PATCH", "/docking/$dockingId/mooring/$mooringId", jsonEncode(data));
+  static Future<dynamic> patchMooring(
+      int dockingId, int mooringId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest(
+        "PATCH", "/docking/$dockingId/mooring/$mooringId", jsonEncode(data));
   }
 
   static Future<dynamic> deleteMooring(int dockingId, int mooringId) async {
-    return RequestInterface._makeRequest("DELETE", "/docking/$dockingId/mooring/$mooringId");
+    return RequestInterface._makeRequest(
+        "DELETE", "/docking/$dockingId/mooring/$mooringId");
   }
 }
 
@@ -151,6 +168,7 @@ class HawsersInterface with RequestInterface {
 
 class BollardsInterface with RequestInterface {
   static Future<dynamic> getBollards(int berthId) async {
-    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/bollards/$berthId");
+    return RequestInterface._makeRequest(
+        "GET", "/smart/ports/$_portCode/bollards/$berthId");
   }
 }
