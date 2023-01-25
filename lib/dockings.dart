@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:neptune/defaultAppBar.dart';
 import 'package:neptune/docking.dart';
 import 'package:neptune/interfaces.dart';
+import 'package:neptune/login.dart';
 
 import 'types.dart';
 
@@ -21,6 +22,28 @@ class _DockingsWidgetState extends State<DockingsWidget> {
       appBar: DefaultAppBar(),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Porto de Santos",
+                  style: Theme.of(context).textTheme.bodyText1,
+                ),
+                IconButton(
+                    onPressed: () async {
+                      await AuthInterface.logOut();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                            builder: (context) => const LoginWidget()),
+                        ModalRoute.withName(""),
+                      );
+                    },
+                    icon: const Icon(Icons.logout))
+              ],
+            ),
+          ),
           Image.asset('assets/static_map.png'),
           const SizedBox(height: 4),
           Expanded(
@@ -71,25 +94,32 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                   return RefreshIndicator(
                     onRefresh: () async {
                       _berths$ = BerthInterface.getBerths();
-                      return _berths$.onError((_, __) => setState(() {})).then((_) => setState(() {}));
+                      return _berths$
+                          .onError((_, __) => setState(() {}))
+                          .then((_) => setState(() {}));
                     },
                     child: ListView.builder(
                       itemCount: berthList.length,
                       itemBuilder: (context, index) {
                         final berth = Berth.fromJson(berthList[index]);
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 2),
                           child: Card(
                             child: InkWell(
-                              onTap: () => Navigator.of(context)
-                                  .push(MaterialPageRoute(builder: (context) => DockingWidget(berth: berth))),
+                              onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          DockingWidget(berth: berth))),
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 8),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(berth.vesselName),
                                         const SizedBox(height: 4),

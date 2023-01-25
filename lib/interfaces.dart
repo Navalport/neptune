@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:neptune/types.dart';
 
@@ -170,5 +171,45 @@ class BollardsInterface with RequestInterface {
   static Future<dynamic> getBollards(int berthId) async {
     return RequestInterface._makeRequest(
         "GET", "/smart/ports/$_portCode/bollards/$berthId");
+  }
+}
+
+class AuthInterface {
+  // static dynamic userData;
+
+  static Future<dynamic> signInWithWebUI() async {
+    await logOut();
+    try {
+      SignInResult res = await Amplify.Auth.signInWithWebUI();
+      if (await isSignedIn()) {
+        // userData = await getUserInfo();
+        return {"status": true};
+      }
+      return {"status": false};
+    } catch (e) {
+      return {"status": false, "message": e};
+    }
+  }
+
+  static Future<void> logOut() async {
+    try {
+      if (await isSignedIn()) {
+        await Amplify.Auth.signOut();
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<dynamic> getUserInfo() async {
+    var result = await Amplify.Auth.fetchUserAttributes();
+    print(result);
+    return result;
+  }
+
+  static Future<bool> isSignedIn() async {
+    AuthSession session = await Amplify.Auth.fetchAuthSession();
+    // userData = await getUserInfo();
+    return session.isSignedIn;
   }
 }

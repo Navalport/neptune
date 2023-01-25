@@ -61,8 +61,8 @@ class _MorringWidgetState extends State<MorringWidget> {
                     child: IntrinsicHeight(
                       child: Column(
                         children: [
-                          Image.asset('assets/static_mooring.png'),
-                          const SizedBox(height: 8),
+                          // Image.asset('assets/static_mooring.png'),
+                          // const SizedBox(height: 8),
                           Form(
                             key: _formKey,
                             child: Row(
