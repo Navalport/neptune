@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:neptune/dockings.dart';
-import 'package:neptune/login.dart';
+import 'package:mooringapp/dockings.dart';
+import 'package:mooringapp/login.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Neptune',
+      title: 'mooringapp',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFF2F3136),
         cardColor: const Color(0xFF32353B),

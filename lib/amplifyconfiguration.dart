@@ -28,8 +28,8 @@ String amplifyconfig = jsonEncode({
             "OAuth": {
               "WebDomain": "auth.navalport.com",
               "AppClientId": "113atadbf2h443868g85ud56lp", //possible bug
-              "SignInRedirectURI": "neptune://",
-              "SignOutRedirectURI": "neptune://",
+              "SignInRedirectURI": "mooringapp://",
+              "SignOutRedirectURI": "mooringapp://",
               "Scopes": [
                 "phone",
                 "email",

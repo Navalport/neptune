@@ -1,12 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.neptune">    
+    package="com.navalport.mooringapp">    
    <queries>
       <intent>
          <action android:name="android.support.customtabs.action.CustomTabsService"/>
       </intent>
    </queries>
    <application
-        android:label="neptune"
+        android:label="Amarração"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
         <activity
@@ -46,7 +46,7 @@
                  <action android:name="android.intent.action.VIEW" />
                  <category android:name="android.intent.category.DEFAULT" />
                  <category android:name="android.intent.category.BROWSABLE" />
-                 <data android:scheme="neptune" />
+                 <data android:scheme="mooringapp" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

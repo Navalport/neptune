@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:neptune/types.dart';
+import 'package:mooringapp/types.dart';
 
 class MessagesWidget extends StatefulWidget {
   final Berth berth;
   final dynamic docking;
 
-  const MessagesWidget({Key? key, required this.berth, required this.docking}) : super(key: key);
+  const MessagesWidget({Key? key, required this.berth, required this.docking})
+      : super(key: key);
 
   @override
   State<MessagesWidget> createState() => _MessagesWidgetState();

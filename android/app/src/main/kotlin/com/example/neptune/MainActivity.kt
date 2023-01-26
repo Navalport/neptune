@@ -1,4 +1,4 @@
-package com.example.neptune
+package com.navalport.mooringapp
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:neptune/defaultAppBar.dart';
-import 'package:neptune/dockings.dart';
-import 'package:neptune/interfaces.dart';
+import 'package:mooringapp/defaultAppBar.dart';
+import 'package:mooringapp/dockings.dart';
+import 'package:mooringapp/interfaces.dart';
 
 class LoginWidget extends StatefulWidget {
   const LoginWidget({Key? key}) : super(key: key);

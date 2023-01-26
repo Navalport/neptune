@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:neptune/defaultAppBar.dart';
-import 'package:neptune/interfaces.dart';
-import 'package:neptune/messages.dart';
-import 'package:neptune/mooring.dart';
-import 'package:neptune/drafting.dart';
-import 'package:neptune/tethers.dart';
-import 'package:neptune/types.dart';
+import 'package:mooringapp/defaultAppBar.dart';
+import 'package:mooringapp/interfaces.dart';
+import 'package:mooringapp/messages.dart';
+import 'package:mooringapp/mooring.dart';
+import 'package:mooringapp/drafting.dart';
+import 'package:mooringapp/tethers.dart';
+import 'package:mooringapp/types.dart';
 
 class DockingWidget extends StatefulWidget {
   final Berth berth;

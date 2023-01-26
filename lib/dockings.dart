@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:neptune/defaultAppBar.dart';
-import 'package:neptune/docking.dart';
-import 'package:neptune/interfaces.dart';
-import 'package:neptune/login.dart';
+import 'package:mooringapp/defaultAppBar.dart';
+import 'package:mooringapp/docking.dart';
+import 'package:mooringapp/interfaces.dart';
+import 'package:mooringapp/login.dart';
 
 import 'types.dart';
 

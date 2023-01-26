@@ -1,6 +1,6 @@
 {
-    "name": "neptune",
-    "short_name": "neptune",
+    "name": "mooringapp",
+    "short_name": "mooringapp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

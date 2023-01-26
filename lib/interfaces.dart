@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:neptune/types.dart';
+import 'package:mooringapp/types.dart';
 
 const String baseURL = "https://api.navalport.com";
 const String _portCode = "BRSSZ";
