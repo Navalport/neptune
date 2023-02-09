@@ -2,8 +2,8 @@ import 'package:rxdart/rxdart.dart';
 import 'interfaces.dart';
 
 class Berth {
-  int dockingId;
-  DateTime eta;
+  int voyageId;
+  int stageId;
   int mmsi;
   String vesselName;
   int berthId;
@@ -14,8 +14,8 @@ class Berth {
   int boardsideId;
 
   Berth(
-      {required this.dockingId,
-      required this.eta,
+      {required this.voyageId,
+      required this.stageId,
       required this.mmsi,
       required this.vesselName,
       required this.berthId,
@@ -27,8 +27,8 @@ class Berth {
 
   factory Berth.fromJson(Map<String, dynamic> json) {
     return Berth(
-      dockingId: json['docking_id'],
-      eta: DateTime.parse(json['eta']),
+      voyageId: json['voyage_id'],
+      stageId: json['stage_id'],
       mmsi: json['mmsi'],
       vesselName: json['vessel_name'],
       berthId: json['berth_id'],
@@ -42,8 +42,7 @@ class Berth {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['docking_id'] = dockingId;
-    data['eta'] = eta;
+    data['voyage_id'] = voyageId;
     data['mmsi'] = mmsi;
     data['vessel_name'] = vesselName;
     data['berth_id'] = berthId;
@@ -56,31 +55,29 @@ class Berth {
   }
 }
 
-class DockingBehaviorSubject {
-  static final DockingBehaviorSubject _singleton =
-      DockingBehaviorSubject._internal();
-  final BehaviorSubject<dynamic> _dockingController =
-      BehaviorSubject<dynamic>();
+class VoyageBehaviorSubject {
+  static final VoyageBehaviorSubject _singleton = VoyageBehaviorSubject._internal();
+  final BehaviorSubject<dynamic> _voyageController = BehaviorSubject<dynamic>();
 
-  factory DockingBehaviorSubject() {
+  factory VoyageBehaviorSubject() {
     return _singleton;
   }
 
   Stream<dynamic> getStream() {
-    return _dockingController.stream;
+    return _voyageController.stream;
   }
 
   void setValue(dynamic value) {
-    _dockingController.add(value);
+    _voyageController.add(value);
   }
 
-  Future<void> refresh(int dockingId) async {
-    var value = await DockingInterface.getDocking(dockingId);
-    _dockingController.add(value);
+  Future<void> refresh(int voyageId) async {
+    var value = await VoyageInterface.getVoyage(voyageId);
+    _voyageController.add(value);
     return;
   }
 
-  DockingBehaviorSubject._internal();
+  VoyageBehaviorSubject._internal();
 }
 
 // enum Boardside {

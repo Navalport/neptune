@@ -4,19 +4,15 @@ import 'package:flutter/material.dart';
 // import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:mooringapp/docking.dart';
+import 'package:mooringapp/voyage.dart';
 import 'package:mooringapp/interfaces.dart';
 import 'package:mooringapp/types.dart';
 
 class MorringWidget extends StatefulWidget {
-  final Berth berth;
+  final Berth berthing;
   final List<dynamic> hawsers, bollards;
 
-  const MorringWidget(
-      {Key? key,
-      required this.berth,
-      required this.hawsers,
-      required this.bollards})
+  const MorringWidget({Key? key, required this.berthing, required this.hawsers, required this.bollards})
       : super(key: key);
 
   @override
@@ -30,7 +26,7 @@ class _MorringWidgetState extends State<MorringWidget> {
   List<dynamic>? _mooringList;
   bool _inProgress = false;
   bool _refreshing = false;
-  DockingBehaviorSubject docking$ = DockingBehaviorSubject();
+  VoyageBehaviorSubject voyage$ = VoyageBehaviorSubject();
 
   @override
   void dispose() {
@@ -40,22 +36,21 @@ class _MorringWidgetState extends State<MorringWidget> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: docking$.getStream(),
+        stream: voyage$.getStream(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          dynamic docking = snapshot.data;
-          _mooringList = docking['mooring']?.reversed.toList();
+          dynamic voyage = snapshot.data;
+          var stage = (voyage["stages"] as List).firstWhere((e) => e["stage_id"] == widget.berthing.stageId);
+          _mooringList = stage['moorings']?.reversed.toList();
 
           return LayoutBuilder(
-            builder:
-                (BuildContext context, BoxConstraints viewportConstraints) {
+            builder: (BuildContext context, BoxConstraints viewportConstraints) {
               return SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minHeight: viewportConstraints.maxHeight),
+                  constraints: BoxConstraints(minHeight: viewportConstraints.maxHeight),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: IntrinsicHeight(
@@ -71,18 +66,14 @@ class _MorringWidgetState extends State<MorringWidget> {
                                   flex: 2,
                                   child: DropdownButtonFormField<dynamic>(
                                     value: _hawser,
-                                    validator: (value) =>
-                                        value == null ? 'Requerido' : null,
+                                    validator: (value) => value == null ? 'Requerido' : null,
                                     dropdownColor: const Color(0xFF292B2F),
                                     decoration: const InputDecoration(
                                       labelText: "Posição",
-                                      contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8, horizontal: 12),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                     ),
                                     items: widget.hawsers
-                                        .map((e) => DropdownMenuItem<dynamic>(
-                                            value: e,
-                                            child: Text(e['hawser_desc'])))
+                                        .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['hawser_desc'])))
                                         .toList(),
                                     onChanged: (dynamic val) {
                                       setState(() {
@@ -96,18 +87,14 @@ class _MorringWidgetState extends State<MorringWidget> {
                                   flex: 1,
                                   child: DropdownButtonFormField<dynamic>(
                                     value: _bollard,
-                                    validator: (value) =>
-                                        value == null ? 'Requerido' : null,
+                                    validator: (value) => value == null ? 'Requerido' : null,
                                     dropdownColor: const Color(0xFF292B2F),
                                     decoration: const InputDecoration(
                                       labelText: "Cabeço",
-                                      contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8, horizontal: 12),
+                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                     ),
                                     items: widget.bollards
-                                        .map((e) => DropdownMenuItem<dynamic>(
-                                            value: e,
-                                            child: Text(e['bollard_name'])))
+                                        .map((e) => DropdownMenuItem<dynamic>(value: e, child: Text(e['bollard_name'])))
                                         .toList(),
                                     onChanged: (dynamic val) {
                                       setState(() {
@@ -122,10 +109,8 @@ class _MorringWidgetState extends State<MorringWidget> {
                           const SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(2.5)),
-                              border:
-                                  Border.all(color: const Color(0xFF36393F)),
+                              borderRadius: const BorderRadius.all(Radius.circular(2.5)),
+                              border: Border.all(color: const Color(0xFF36393F)),
                               color: const Color(0xFF292B2F),
                             ),
                             child: _inProgress
@@ -143,29 +128,19 @@ class _MorringWidgetState extends State<MorringWidget> {
                                             padding: const EdgeInsets.all(4),
                                             child: ElevatedButton(
                                               onPressed: () async {
-                                                if (_formKey.currentState!
-                                                    .validate()) {
+                                                if (_formKey.currentState!.validate()) {
                                                   setState(() {
                                                     _inProgress = true;
                                                   });
-                                                  await DockingInterface
-                                                      .postMooring(
-                                                          widget
-                                                              .berth.dockingId,
-                                                          {
-                                                        'docking_id': widget
-                                                            .berth.dockingId,
-                                                        'assign_id': 1,
-                                                        'hawser_id': _hawser[
-                                                            "hawser_id"],
-                                                        'bollard_id': _bollard[
-                                                            "bollard_id"],
-                                                        'tied_at': DateTime
-                                                                .now()
-                                                            .toIso8601String(),
-                                                      });
-                                                  await docking$.refresh(
-                                                      docking["docking_id"]);
+                                                  await VoyageInterface.postMooring({
+                                                    'voyage_id': widget.berthing.voyageId,
+                                                    'stage_id': widget.berthing.stageId,
+                                                    'assign_id': 1,
+                                                    'hawser_id': _hawser["hawser_id"],
+                                                    'bollard_id': int.parse(_bollard["bollard_id"]),
+                                                    'tied_at': DateTime.now().toIso8601String(),
+                                                  });
+                                                  await voyage$.refresh(voyage["voyage_id"]);
                                                   setState(() {
                                                     _inProgress = false;
                                                   });
@@ -182,9 +157,7 @@ class _MorringWidgetState extends State<MorringWidget> {
                                       Expanded(
                                         child: AspectRatio(
                                           aspectRatio: 1,
-                                          child: Padding(
-                                              padding: const EdgeInsets.all(4),
-                                              child: Container()),
+                                          child: Padding(padding: const EdgeInsets.all(4), child: Container()),
                                         ),
                                       ),
                                       // Expanded(
@@ -224,53 +197,27 @@ class _MorringWidgetState extends State<MorringWidget> {
                                             padding: const EdgeInsets.all(4),
                                             child: ElevatedButton(
                                               onPressed: _mooringList?.any((e) =>
-                                                          e["hawser_id"] ==
-                                                              _hawser?[
-                                                                  "hawser_id"] &&
+                                                          e["hawser_id"] == _hawser?["hawser_id"] &&
                                                           e["bollard_id"] ==
-                                                              int.tryParse(
-                                                                  _bollard?[
-                                                                          "bollard_id"] ??
-                                                                      '') &&
-                                                          e["untied_at"] ==
-                                                              null &&
-                                                          e["broken_at"] ==
-                                                              null) ??
+                                                              int.tryParse(_bollard?["bollard_id"] ?? '') &&
+                                                          e["untied_at"] == null &&
+                                                          e["broken_at"] == null) ??
                                                       false
                                                   ? () async {
-                                                      if (_formKey.currentState!
-                                                          .validate()) {
+                                                      if (_formKey.currentState!.validate()) {
                                                         setState(() {
                                                           _inProgress = true;
                                                         });
-                                                        dynamic mooring = _mooringList!
-                                                            .firstWhere((e) =>
-                                                                e["hawser_id"] ==
-                                                                    _hawser[
-                                                                        "hawser_id"] &&
-                                                                e["bollard_id"] ==
-                                                                    int.parse(
-                                                                        _bollard[
-                                                                            "bollard_id"]) &&
-                                                                e["untied_at"] ==
-                                                                    null &&
-                                                                e["broken_at"] ==
-                                                                    null);
-                                                        await DockingInterface
-                                                            .patchMooring(
-                                                                widget.berth
-                                                                    .dockingId,
-                                                                mooring[
-                                                                    "mooring_id"],
-                                                                {
-                                                              ...mooring,
-                                                              "untied_at": DateTime
-                                                                      .now()
-                                                                  .toIso8601String()
-                                                            });
-                                                        await docking$.refresh(
-                                                            docking[
-                                                                "docking_id"]);
+                                                        dynamic mooring = _mooringList!.firstWhere((e) =>
+                                                            e["hawser_id"] == _hawser["hawser_id"] &&
+                                                            e["bollard_id"] == int.parse(_bollard["bollard_id"]) &&
+                                                            e["untied_at"] == null &&
+                                                            e["broken_at"] == null);
+                                                        await VoyageInterface.patchMooring(mooring["mooring_id"], {
+                                                          ...mooring,
+                                                          "untied_at": DateTime.now().toIso8601String()
+                                                        });
+                                                        await voyage$.refresh(voyage["voyage_id"]);
                                                         setState(() {
                                                           _inProgress = false;
                                                         });
@@ -288,9 +235,7 @@ class _MorringWidgetState extends State<MorringWidget> {
                                       Expanded(
                                         child: AspectRatio(
                                           aspectRatio: 1,
-                                          child: Padding(
-                                              padding: const EdgeInsets.all(4),
-                                              child: Container()),
+                                          child: Padding(padding: const EdgeInsets.all(4), child: Container()),
                                         ),
                                       ),
                                       Expanded(
@@ -300,49 +245,25 @@ class _MorringWidgetState extends State<MorringWidget> {
                                             padding: const EdgeInsets.all(4),
                                             child: ElevatedButton(
                                               onPressed: _mooringList?.any((e) =>
-                                                          e["hawser_id"] ==
-                                                              _hawser?[
-                                                                  "hawser_id"] &&
+                                                          e["hawser_id"] == _hawser?["hawser_id"] &&
                                                           e["bollard_id"] ==
-                                                              int.tryParse(
-                                                                  _bollard?[
-                                                                          "bollard_id"] ??
-                                                                      '') &&
-                                                          e["untied_at"] ==
-                                                              null &&
-                                                          e["broken_at"] ==
-                                                              null) ??
+                                                              int.tryParse(_bollard?["bollard_id"] ?? '') &&
+                                                          e["untied_at"] == null &&
+                                                          e["broken_at"] == null) ??
                                                       false
                                                   ? () async {
-                                                      if (_formKey.currentState!
-                                                          .validate()) {
+                                                      if (_formKey.currentState!.validate()) {
                                                         setState(() {
                                                           _inProgress = true;
                                                         });
-                                                        dynamic mooring = _mooringList!
-                                                            .firstWhere((e) =>
-                                                                e["hawser_id"] ==
-                                                                    _hawser[
-                                                                        "hawser_id"] &&
-                                                                e["bollard_id"] ==
-                                                                    int.parse(
-                                                                        _bollard[
-                                                                            "bollard_id"]));
-                                                        await DockingInterface
-                                                            .patchMooring(
-                                                                widget.berth
-                                                                    .dockingId,
-                                                                mooring[
-                                                                    "mooring_id"],
-                                                                {
-                                                              ...mooring,
-                                                              "broken_at": DateTime
-                                                                      .now()
-                                                                  .toIso8601String()
-                                                            });
-                                                        await docking$.refresh(
-                                                            docking[
-                                                                "docking_id"]);
+                                                        dynamic mooring = _mooringList!.firstWhere((e) =>
+                                                            e["hawser_id"] == _hawser["hawser_id"] &&
+                                                            e["bollard_id"] == int.parse(_bollard["bollard_id"]));
+                                                        await VoyageInterface.patchMooring(mooring["mooring_id"], {
+                                                          ...mooring,
+                                                          "broken_at": DateTime.now().toIso8601String()
+                                                        });
+                                                        await voyage$.refresh(voyage["voyage_id"]);
                                                         setState(() {
                                                           _inProgress = false;
                                                         });
@@ -365,10 +286,8 @@ class _MorringWidgetState extends State<MorringWidget> {
                             child: Container(
                               height: MediaQuery.of(context).size.height / 3,
                               decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.all(
-                                    Radius.circular(2.5)),
-                                border:
-                                    Border.all(color: const Color(0xFF36393F)),
+                                borderRadius: const BorderRadius.all(Radius.circular(2.5)),
+                                border: Border.all(color: const Color(0xFF36393F)),
                                 color: const Color(0xFF292B2F),
                               ),
                               child: _mooringList == null
@@ -380,23 +299,19 @@ class _MorringWidgetState extends State<MorringWidget> {
                                             _refreshing
                                                 ? const Padding(
                                                     padding: EdgeInsets.all(6),
-                                                    child:
-                                                        CircularProgressIndicator(),
+                                                    child: CircularProgressIndicator(),
                                                   )
                                                 : IconButton(
                                                     onPressed: () async {
                                                       setState(() {
                                                         _refreshing = true;
                                                       });
-                                                      await docking$.refresh(
-                                                          docking[
-                                                              "docking_id"]);
+                                                      await voyage$.refresh(voyage["voyage_id"]);
                                                       setState(() {
                                                         _refreshing = false;
                                                       });
                                                     },
-                                                    icon: const Icon(
-                                                        Icons.refresh))
+                                                    icon: const Icon(Icons.refresh))
                                           ],
                                         ),
                                       ),
@@ -404,18 +319,14 @@ class _MorringWidgetState extends State<MorringWidget> {
                                   : Scrollbar(
                                       radius: const Radius.circular(5),
                                       child: RefreshIndicator(
-                                        onRefresh: () => docking$
-                                            .refresh(docking["docking_id"]),
+                                        onRefresh: () => voyage$.refresh(voyage["voyage_id"]),
                                         child: ListView.builder(
                                           itemCount: _mooringList!.length,
                                           itemBuilder: (context, index) {
-                                            dynamic mooring =
-                                                _mooringList![index];
+                                            dynamic mooring = _mooringList![index];
 
-                                            final bool isBroken =
-                                                mooring['broken_at'] != null;
-                                            final bool isUntied =
-                                                mooring['untied_at'] != null;
+                                            final bool isBroken = mooring['broken_at'] != null;
+                                            final bool isUntied = mooring['untied_at'] != null;
 
                                             final Color textColor = () {
                                               if (isBroken) {
@@ -430,48 +341,32 @@ class _MorringWidgetState extends State<MorringWidget> {
                                             return Card(
                                               child: InkWell(
                                                 onLongPress: () {
-                                                  _showDeleteDialog(mooring,
-                                                      docking["docking_id"]);
+                                                  _showDeleteDialog(mooring, voyage["voyage_id"]);
                                                 },
                                                 onTap: () {
                                                   setState(() {
-                                                    _bollard = widget.bollards
-                                                        .firstWhere((e) =>
-                                                            int.parse(e[
-                                                                "bollard_id"]) ==
-                                                            mooring[
-                                                                "bollard_id"]);
+                                                    _bollard = widget.bollards.firstWhere(
+                                                        (e) => int.parse(e["bollard_id"]) == mooring["bollard_id"]);
                                                     _hawser = widget.hawsers
-                                                        .firstWhere((e) =>
-                                                            e["hawser_id"] ==
-                                                            mooring[
-                                                                "hawser_id"]);
+                                                        .firstWhere((e) => e["hawser_id"] == mooring["hawser_id"]);
                                                   });
                                                 },
                                                 child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
+                                                  padding: const EdgeInsets.all(8.0),
                                                   child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                     children: [
                                                       Flexible(
                                                         child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                           children: [
                                                             Text(
                                                               widget.hawsers.firstWhere((e) =>
-                                                                      e["hawser_id"] ==
-                                                                      mooring[
-                                                                          "hawser_id"])[
-                                                                  "hawser_desc"],
+                                                                  e["hawser_id"] ==
+                                                                  mooring["hawser_id"])["hawser_desc"],
                                                               style: TextStyle(
                                                                 fontSize: 16,
-                                                                color:
-                                                                    textColor,
+                                                                color: textColor,
                                                               ),
                                                             ),
                                                           ],
@@ -479,17 +374,13 @@ class _MorringWidgetState extends State<MorringWidget> {
                                                       ),
                                                       Flexible(
                                                         child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                           children: [
                                                             Text(
-                                                              mooring["bollard_name"]
-                                                                  .toString(),
+                                                              mooring["bollard_name"].toString(),
                                                               style: TextStyle(
                                                                 fontSize: 16,
-                                                                color:
-                                                                    textColor,
+                                                                color: textColor,
                                                               ),
                                                             ),
                                                           ],
@@ -539,7 +430,7 @@ class _MorringWidgetState extends State<MorringWidget> {
         .toList();
   }
 
-  Future<void> _showDeleteDialog(dynamic mooring, int dockingId) async {
+  Future<void> _showDeleteDialog(dynamic mooring, int voyageId) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -552,8 +443,7 @@ class _MorringWidgetState extends State<MorringWidget> {
           // content: Text(error),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancelar',
-                  style: Theme.of(context).textTheme.bodyText1),
+              child: Text('Cancelar', style: Theme.of(context).textTheme.bodyText1),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -566,17 +456,14 @@ class _MorringWidgetState extends State<MorringWidget> {
                   _inProgress = true;
                 });
                 if (mooring["untied_at"] != null) {
-                  await DockingInterface.patchMooring(widget.berth.dockingId,
-                      mooring["mooring_id"], {...mooring, "untied_at": null});
+                  await VoyageInterface.patchMooring(mooring["mooring_id"], {...mooring, "untied_at": null});
                 }
                 if (mooring["broken_at"] != null) {
-                  await DockingInterface.patchMooring(widget.berth.dockingId,
-                      mooring["mooring_id"], {...mooring, "broken_at": null});
+                  await VoyageInterface.patchMooring(mooring["mooring_id"], {...mooring, "broken_at": null});
                 } else {
-                  await DockingInterface.deleteMooring(
-                      widget.berth.dockingId, mooring["mooring_id"]);
+                  await VoyageInterface.deleteMooring(mooring["mooring_id"]);
                 }
-                await docking$.refresh(dockingId);
+                await voyage$.refresh(voyageId);
                 setState(() {
                   _inProgress = false;
                 });

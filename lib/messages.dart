@@ -3,10 +3,9 @@ import 'package:mooringapp/types.dart';
 
 class MessagesWidget extends StatefulWidget {
   final Berth berth;
-  final dynamic docking;
+  final dynamic voyage;
 
-  const MessagesWidget({Key? key, required this.berth, required this.docking})
-      : super(key: key);
+  const MessagesWidget({Key? key, required this.berth, required this.voyage}) : super(key: key);
 
   @override
   State<MessagesWidget> createState() => _MessagesWidgetState();

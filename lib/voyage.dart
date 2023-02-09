@@ -10,15 +10,15 @@ import 'package:mooringapp/tethers.dart';
 import 'package:mooringapp/types.dart';
 
 class DockingWidget extends StatefulWidget {
-  final Berth berth;
-  const DockingWidget({Key? key, required this.berth}) : super(key: key);
+  final Berth stage;
+  const DockingWidget({Key? key, required this.stage}) : super(key: key);
 
   @override
   State<DockingWidget> createState() => _DockingWidgetState();
 }
 
 class _DockingWidgetState extends State<DockingWidget> {
-  Future<dynamic> _docking$ = Completer().future;
+  Future<dynamic> _voyage$ = Completer().future;
   Future<dynamic> _hawsers$ = Completer().future;
   Future<dynamic> _bollards$ = Completer().future;
 
@@ -37,21 +37,21 @@ class _DockingWidgetState extends State<DockingWidget> {
   }
 
   Future<void> loadData() async {
-    _docking$ = DockingInterface.getDocking(widget.berth.dockingId);
+    _voyage$ = VoyageInterface.getVoyage(widget.stage.voyageId);
     _hawsers$ = HawsersInterface.getHawsers();
-    _bollards$ = BollardsInterface.getBollards(widget.berth.berthId);
+    _bollards$ = BollardsInterface.getBollards(widget.stage.berthId);
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: DefaultAppBar(
           bottom: const TabBar(
             indicatorColor: Color(0xFFF38D36),
             tabs: [
-              Tab(text: "Calado"),
+              // Tab(text: "Calado"),
               Tab(text: "Amarração"),
               Tab(text: "Cabos"),
               // Tab(text: "Mensagens"),
@@ -65,12 +65,12 @@ class _DockingWidgetState extends State<DockingWidget> {
               child: Column(
                 children: [
                   Text(
-                    widget.berth.vesselName,
+                    widget.stage.vesselName,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.berth.berthName,
+                    widget.stage.berthName,
                     style: Theme.of(context).textTheme.bodyLarge,
                   )
                 ],
@@ -82,7 +82,7 @@ class _DockingWidgetState extends State<DockingWidget> {
             ),
             Expanded(
               child: FutureBuilder<dynamic>(
-                future: Future.wait([_docking$, _hawsers$, _bollards$]),
+                future: Future.wait([_voyage$, _hawsers$, _bollards$]),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const Center(
@@ -106,24 +106,18 @@ class _DockingWidgetState extends State<DockingWidget> {
                       ),
                     );
                   } else if (snapshot.hasData) {
-                    var docking = snapshot.data[0];
+                    var voyage = snapshot.data[0];
                     var hawsers = snapshot.data[1];
                     var bollards = snapshot.data[2];
 
-                    DockingBehaviorSubject().setValue(docking);
+                    VoyageBehaviorSubject().setValue(voyage);
 
                     return TabBarView(
                       children: [
-                        DrafitingWidget(berth: widget.berth),
-                        MorringWidget(
-                            berth: widget.berth,
-                            hawsers: hawsers,
-                            bollards: bollards),
-                        TethersWidget(
-                            berth: widget.berth,
-                            hawsers: hawsers,
-                            bollards: bollards),
-                        // MessagesWidget(berth: widget.berth, docking: snapshot.data),
+                        // DrafitingWidget(berth: widget.berth),
+                        MorringWidget(berthing: widget.stage, hawsers: hawsers, bollards: bollards),
+                        TethersWidget(berthing: widget.stage, hawsers: hawsers, bollards: bollards),
+                        // MessagesWidget(berth: widget.berth, voyage: snapshot.data),
                       ],
                     );
                   } else {

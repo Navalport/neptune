@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mooringapp/defaultAppBar.dart';
-import 'package:mooringapp/dockings.dart';
+import 'package:mooringapp/voyages.dart';
 import 'package:mooringapp/interfaces.dart';
 
 class LoginWidget extends StatefulWidget {
@@ -25,8 +25,7 @@ class _LoginWidgetState extends State<LoginWidget> {
             }
             if (snapshot.hasData && snapshot.data!) {
               Future.microtask(() => Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                        builder: (context) => const DockingsWidget()),
+                    MaterialPageRoute(builder: (context) => const DockingsWidget()),
                     ModalRoute.withName(""),
                   ));
               return Container();
@@ -42,10 +41,8 @@ class _LoginWidgetState extends State<LoginWidget> {
                   if (snapshot.hasData) {
                     final loginResult = snapshot.data;
                     if (loginResult["status"]) {
-                      Future.microtask(() =>
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (context) => const DockingsWidget()),
+                      Future.microtask(() => Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const DockingsWidget()),
                             ModalRoute.withName(""),
                           ));
                       return Container();
@@ -55,22 +52,17 @@ class _LoginWidgetState extends State<LoginWidget> {
                           child: Column(
                             children: [
                               ElevatedButton(
-                                onPressed: () =>
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const LoginWidget()),
+                                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(builder: (context) => const LoginWidget()),
                                   ModalRoute.withName(""),
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF38D36)),
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF38D36)),
                                 child: Text(
                                   "Login",
                                   style: Theme.of(context).textTheme.headline5,
                                 ),
                               ),
-                              const Text(
-                                  "Ocorreu um erro ao fazer o login. Tente novamente."),
+                              const Text("Ocorreu um erro ao fazer o login. Tente novamente."),
                             ],
                           ),
                         ),
@@ -80,21 +72,17 @@ class _LoginWidgetState extends State<LoginWidget> {
                     return Column(
                       children: [
                         ElevatedButton(
-                          onPressed: () =>
-                              Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (context) => const LoginWidget()),
+                          onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const LoginWidget()),
                             ModalRoute.withName(""),
                           ),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF38D36)),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF38D36)),
                           child: Text(
                             "Login",
                             style: Theme.of(context).textTheme.headline5,
                           ),
                         ),
-                        const Text(
-                            "Ocorreu um erro ao fazer o login. Tente novamente."),
+                        const Text("Ocorreu um erro ao fazer o login. Tente novamente."),
                       ],
                     );
                   }

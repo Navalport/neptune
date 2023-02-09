@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mooringapp/dockings.dart';
+import 'package:mooringapp/voyages.dart';
 import 'package:mooringapp/login.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
@@ -21,8 +21,7 @@ Future<void> _configureAmplify() async {
   try {
     await Amplify.configure(amplifyconfig);
   } on AmplifyAlreadyConfiguredException {
-    safePrint(
-        "Tried to reconfigure Amplify; this can occur when your app restarts on Android.");
+    safePrint("Tried to reconfigure Amplify; this can occur when your app restarts on Android.");
   }
 }
 
@@ -35,12 +34,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFF2F3136),
         cardColor: const Color(0xFF32353B),
-        iconTheme: Theme.of(context)
-            .iconTheme
-            .copyWith(color: const Color(0xFFE4F8EF)),
-        progressIndicatorTheme: Theme.of(context)
-            .progressIndicatorTheme
-            .copyWith(color: const Color(0xFFF38D36)),
+        iconTheme: Theme.of(context).iconTheme.copyWith(color: const Color(0xFFE4F8EF)),
+        progressIndicatorTheme: Theme.of(context).progressIndicatorTheme.copyWith(color: const Color(0xFFF38D36)),
         textTheme: const TextTheme(
           headline1: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
           headline5: TextStyle(fontSize: 36.0),
@@ -53,16 +48,12 @@ class MyApp extends StatelessWidget {
           bodyColor: const Color(0xFFE4F8EF),
           displayColor: const Color(0xFFE4F8EF),
         ),
-        colorScheme: ColorScheme.fromSwatch(
-                primarySwatch: createMaterialColor(const Color(0xFF32353B)))
-            .copyWith(
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: createMaterialColor(const Color(0xFF32353B))).copyWith(
           secondary: const Color(0xFFF38D36),
         ),
         radioTheme: RadioThemeData(
             fillColor: MaterialStateColor.resolveWith((states) =>
-                states.contains(MaterialState.selected)
-                    ? const Color(0xFFF38D36)
-                    : const Color(0xFFE4F8EF))),
+                states.contains(MaterialState.selected) ? const Color(0xFFF38D36) : const Color(0xFFE4F8EF))),
         dialogBackgroundColor: const Color(0xFF32353B),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
