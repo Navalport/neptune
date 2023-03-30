@@ -8,6 +8,16 @@ import 'package:mooringapp/types.dart';
 const String baseURL = "https://api.navalport.com";
 const String _portCode = "BRSSZ";
 
+// extension TryDecode on JsonCodec {
+//   String? tryDecode(String source, {Object? Function(Object?, Object?)? reviver}) {
+//     try {
+//       return decode(source, reviver: reviver);
+//     } catch (e) {
+//       return null;
+//     }
+//   }
+// }
+
 class RequestInterface {
   // static Future<dynamic> _makeMultipartRequest(String method, String route,
   //     Map fields, List<http.MultipartFile> files) async {
@@ -69,6 +79,9 @@ class RequestInterface {
       http.StreamedResponse response = await request.send(); //.timeout(const Duration(seconds: 5));
       String data = await response.stream.bytesToString();
       // return Future.error("falha de teste");
+      if (data == "") {
+        data = "{}";
+      }
       return json.decode(data);
     } catch (e) {
       return Future.error(e.toString());
@@ -100,12 +113,12 @@ class BerthInterface with RequestInterface {
     // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
     DateTime now = DateTime.now();
     var lineup = await RequestInterface._makeRequest(
-        "GET", "/voyage/lineup/$_portCode?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}");
+        "GET", "/voyage/lineup/$_portCode"); //?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}
     var temp = (lineup as List)
         .map((voyage) {
           var stage = (voyage["stages"] as List?)?.where((s) => s["stagetype"] == 'berthed').firstWhere(
               (s) =>
-                  now.compareTo(DateTime.parse(s["ats"])) >= 0 &&
+                  (s["ats"] == null || now.compareTo(DateTime.parse(s["ats"])) >= 0) &&
                   (s["atf"] == null || now.compareTo(DateTime.parse(s["atf"])) <= 0),
               orElse: () => null);
           if (stage != null) {
@@ -139,7 +152,7 @@ class BerthInterface with RequestInterface {
   }
 }
 
-class VoyageInterface with RequestInterface {
+class VoyagesInterface with RequestInterface {
   static Future<dynamic> getVoyage(int voyageId) async {
     return RequestInterface._makeRequest("GET", "/smart-voyages/voyages/$voyageId");
   }
@@ -147,36 +160,60 @@ class VoyageInterface with RequestInterface {
   static Future<dynamic> patchVoyage(int voyageId, Map<String, dynamic> data) async {
     return RequestInterface._makeRequest("PATCH", "/smart-voyages/voyages/$voyageId", jsonEncode(data));
   }
+}
 
-  // static Future<dynamic> postDrafting(int voyageId, Map<String, dynamic> data) async {
-  //   return RequestInterface._makeRequest("POST", "/smart-voyages/voyages/$voyageId/drafting", jsonEncode(data));
+class DockingsInterface with RequestInterface {
+  static Future<dynamic> postDrafting(Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("POST", "/smart-voyages/draftings", jsonEncode(data));
+  }
+
+  static Future<dynamic> deleteDrafting(int draftingId) async {
+    return RequestInterface._makeRequest("DELETE", "/smart-voyages/draftings/$draftingId");
+  }
+
+  // static Future<dynamic> postMooring(Map<String, dynamic> data) async {
+  //   return RequestInterface._makeRequest("POST", "/voyage/moorings", jsonEncode(data));
   // }
 
-  // static Future<dynamic> deleteDrafting(int voyageId, int draftingId) async {
-  //   return RequestInterface._makeRequest("DELETE", "/smart-voyages/voyages/$voyageId/drafting/$draftingId");
-  // }
-
-  static Future<dynamic> postMooring(Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/voyage/moorings", jsonEncode(data));
+  static Future<dynamic> postMooring(int stageId, Map<String, dynamic> data) async {
+    final mooring = await RequestInterface._makeRequest(
+        "POST",
+        "/smart-voyages/moorings",
+        jsonEncode({
+          "stage_id": stageId,
+          "tethers": [data]
+        }));
+    // final tether = await RequestInterface._makeRequest(
+    //     "POST", "/smart-voyages/moorings/${mooring["mooring_id"]}/tethers", jsonEncode(data));
+    return mooring;
   }
 
   static Future<dynamic> patchMooring(int mooringId, Map<String, dynamic> data) async {
-    Map<String, dynamic> dataCopy = new Map.from(data);
-    dataCopy.removeWhere((key, value) => ![
-          "assign_id",
-          "hawser_id",
-          "bollard_id",
-          "tied_at",
-          "untied_at",
-          "broken_at",
-          "distance",
-          "type",
-        ].contains(key));
-    return RequestInterface._makeRequest("PATCH", "/voyage/moorings/$mooringId", jsonEncode(dataCopy));
+    return RequestInterface._makeRequest("PATCH", "/smart-voyages/moorings/$mooringId", jsonEncode(data));
   }
 
   static Future<dynamic> deleteMooring(int mooringId) async {
     return RequestInterface._makeRequest("DELETE", "/voyage/moorings/$mooringId");
+  }
+
+  static Future<dynamic> postTether(int mooringId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("POST", "/smart-voyages/moorings/$mooringId/tethers", jsonEncode(data));
+  }
+
+  static Future<dynamic> patchTether(int mooringId, int tetherId, Map<String, dynamic> data) async {
+    final tether = await RequestInterface._makeRequest(
+        "PATCH", "/smart-voyages/moorings/$mooringId/tethers/$tetherId", jsonEncode(data));
+    return tether;
+  }
+
+  static Future<dynamic> deleteTether(int mooringId, int tetherId) async {
+    return RequestInterface._makeRequest("DELETE", "/smart-voyages/moorings/$mooringId/tethers/$tetherId");
+  }
+
+  static Future<dynamic> bindTether(
+      int mooringId, int tetherId, Map<String, dynamic> mooringData, Map<String, dynamic> tetherData) async {
+    await DockingsInterface.patchMooring(mooringId, mooringData);
+    return DockingsInterface.patchTether(mooringId, tetherId, tetherData);
   }
 }
 

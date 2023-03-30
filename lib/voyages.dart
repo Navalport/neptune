@@ -15,6 +15,13 @@ class DockingsWidget extends StatefulWidget {
 
 class _DockingsWidgetState extends State<DockingsWidget> {
   Future<dynamic> _berths$ = BerthInterface.getBerths();
+  final _searchBarController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchBarController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +51,21 @@ class _DockingsWidgetState extends State<DockingsWidget> {
             ),
           ),
           Image.asset('assets/static_map.png'),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {});
+              },
+              controller: _searchBarController,
+              decoration: InputDecoration(
+                  labelText: "Buscar",
+                  suffixIcon: const Icon(Icons.search),
+                  suffixIconColor: const Color(0xFFE4F8EF),
+                  suffixStyle: Theme.of(context).textTheme.bodyText2),
+            ),
+          ),
           const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<dynamic>(
@@ -90,15 +112,21 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                     );
                   }
 
+                  var filteredBerthList = berthList
+                      .where((e) =>
+                          e["vessel_name"].toLowerCase().contains(_searchBarController.text.toLowerCase()) ||
+                          e["berth_name"].toLowerCase().contains(_searchBarController.text.toLowerCase()))
+                      .toList();
+
                   return RefreshIndicator(
                     onRefresh: () async {
                       _berths$ = BerthInterface.getBerths();
                       return _berths$.onError((_, __) => setState(() {})).then((_) => setState(() {}));
                     },
                     child: ListView.builder(
-                      itemCount: berthList.length,
+                      itemCount: filteredBerthList.length,
                       itemBuilder: (context, index) {
-                        final berth = Berth.fromJson(berthList[index]);
+                        final berth = Berth.fromJson(filteredBerthList[index]);
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                           child: Card(

@@ -72,7 +72,7 @@ class VoyageBehaviorSubject {
   }
 
   Future<void> refresh(int voyageId) async {
-    var value = await VoyageInterface.getVoyage(voyageId);
+    var value = await VoyagesInterface.getVoyage(voyageId);
     _voyageController.add(value);
     return;
   }
