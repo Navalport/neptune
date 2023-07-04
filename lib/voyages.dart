@@ -14,7 +14,7 @@ class DockingsWidget extends StatefulWidget {
 }
 
 class _DockingsWidgetState extends State<DockingsWidget> {
-  Future<dynamic> _berths$ = BerthInterface.getBerths();
+  Future<List<Voyage>> _voyages$ = VoyageInterface.getVoyages();
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,8 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                     onPressed: () async {
                       await AuthInterface.logOut();
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const LoginWidget()),
+                        MaterialPageRoute(
+                            builder: (context) => const LoginWidget()),
                         ModalRoute.withName(""),
                       );
                     },
@@ -43,12 +44,12 @@ class _DockingsWidgetState extends State<DockingsWidget> {
               ],
             ),
           ),
-          Image.asset('assets/static_map.png'),
-          const SizedBox(height: 4),
+          // Image.asset('assets/static_map.png'),
+          // const SizedBox(height: 4),
           Expanded(
-            child: FutureBuilder<dynamic>(
-              future: _berths$,
-              builder: (context, snapshot) {
+            child: FutureBuilder(
+              future: _voyages$,
+              builder: (context, AsyncSnapshot<List<Voyage>> snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(
                     child: CircularProgressIndicator(),
@@ -62,7 +63,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                           Text(snapshot.error.toString()),
                           IconButton(
                               onPressed: () async {
-                                _berths$ = BerthInterface.getBerths();
+                                _voyages$ = VoyageInterface.getVoyages();
                                 setState(() {});
                               },
                               icon: const Icon(Icons.refresh))
@@ -70,53 +71,62 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                       ),
                     ),
                   );
-                } else if (snapshot.hasData && snapshot.data.length > 0) {
-                  final berthList = snapshot.data;
-                  if ((berthList as List).isEmpty) {
-                    return Center(
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            const Text("Sem dados"),
-                            IconButton(
-                                onPressed: () async {
-                                  _berths$ = BerthInterface.getBerths();
-                                  setState(() {});
-                                },
-                                icon: const Icon(Icons.refresh))
-                          ],
-                        ),
-                      ),
-                    );
-                  }
+                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  final voyages = snapshot.data!;
 
                   return RefreshIndicator(
                     onRefresh: () async {
-                      _berths$ = BerthInterface.getBerths();
-                      return _berths$.onError((_, __) => setState(() {})).then((_) => setState(() {}));
+                      _voyages$ = VoyageInterface.getVoyages();
+                      return _voyages$.onError((_, __) {
+                        setState(() {});
+                        return [];
+                      }).then((_) => setState(() {}));
                     },
                     child: ListView.builder(
-                      itemCount: berthList.length,
+                      itemCount: voyages.length,
                       itemBuilder: (context, index) {
-                        final berth = Berth.fromJson(berthList[index]);
+                        final voyage = voyages[index];
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 2),
                           child: Card(
                             child: InkWell(
-                              onTap: () => Navigator.of(context)
-                                  .push(MaterialPageRoute(builder: (context) => DockingWidget(stage: berth))),
+                              // onTap: () => Navigator.of(context).push(
+                              //     MaterialPageRoute(
+                              //         builder: (context) =>
+                              //             DockingWidget(stage: voyage))),
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 8),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(berth.vesselName),
-                                        const SizedBox(height: 4),
-                                        Text(berth.berthName)
-                                      ],
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(voyage.vessel_name ??
+                                                  "Embarcação sem nome"),
+                                              const SizedBox(height: 4),
+                                              Text(voyage.voyage_desc ?? "N/D"),
+                                            ],
+                                          ),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text("IMO: ${voyage.imo}"),
+                                              const SizedBox(height: 4),
+                                              Text("DUV: ${voyage.duv}"),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     const Padding(
                                       padding: EdgeInsets.all(10),
@@ -139,7 +149,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                           const Text("Sem dados"),
                           IconButton(
                               onPressed: () async {
-                                _berths$ = BerthInterface.getBerths();
+                                _voyages$ = VoyageInterface.getVoyages();
                                 setState(() {});
                               },
                               icon: const Icon(Icons.refresh))

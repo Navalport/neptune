@@ -53,7 +53,8 @@ class RequestInterface {
   //   }
   // }
 
-  static Future<dynamic> _makeRequest(String method, String route, [String? body]) async {
+  static Future<dynamic> _makeRequest(String method, String route,
+      [String? body]) async {
     var headers = {
       'Content-Type': 'application/json',
     };
@@ -66,7 +67,8 @@ class RequestInterface {
     request.headers.addAll(headers);
 
     try {
-      http.StreamedResponse response = await request.send(); //.timeout(const Duration(seconds: 5));
+      http.StreamedResponse response =
+          await request.send(); //.timeout(const Duration(seconds: 5));
       String data = await response.stream.bytesToString();
       // return Future.error("falha de teste");
       return json.decode(data);
@@ -95,57 +97,62 @@ class RequestInterface {
   }
 }
 
-class BerthInterface with RequestInterface {
-  static Future<dynamic> getBerths() async {
-    // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
-    DateTime now = DateTime.now();
-    var lineup = await RequestInterface._makeRequest(
-        "GET", "/voyage/lineup/$_portCode?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}");
-    var temp = (lineup as List)
-        .map((voyage) {
-          var stage = (voyage["stages"] as List?)?.where((s) => s["stagetype"] == 'berthed').firstWhere(
-              (s) =>
-                  now.compareTo(DateTime.parse(s["ats"])) >= 0 &&
-                  (s["atf"] == null || now.compareTo(DateTime.parse(s["atf"])) <= 0),
-              orElse: () => null);
-          if (stage != null) {
-            return {
-              ...stage,
-              "mmsi": voyage["mmsi"],
-              "vessel_name": voyage["vessel_name"],
-              "port_code": voyage["port_code"]
-            };
-          } else {
-            return null;
-          }
-        })
-        .where((e) => e != null && e["berthing"]["berth_id"] != null)
-        .toList();
-
-    return temp
-        .map((e) => ({
-              'voyage_id': e!['voyage_id'],
-              'stage_id': e['stage_id'],
-              'mmsi': e['mmsi'],
-              'vessel_name': e['vessel_name'],
-              'berth_id': e["berthing"]['berth_id'],
-              'berth_name': e["berthing"]['berth_name'],
-              'boardside_abbr': e["berthing"]['boardside_abbr'],
-              'boardside_desc': e["berthing"]['boardside_desc'],
-              'boardside_id': e["berthing"]['boardside_id'],
-              'port_code': e['port_code']
-            }))
-        .toList();
-  }
-}
-
 class VoyageInterface with RequestInterface {
-  static Future<dynamic> getVoyage(int voyageId) async {
-    return RequestInterface._makeRequest("GET", "/smart-voyages/voyages/$voyageId");
+  static Future<List<Voyage>> getVoyages() async {
+    // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
+    // DateTime now = DateTime.now();
+    var lineup = await RequestInterface._makeRequest(
+        "GET", "/voyages/lineup/$_portCode");
+    return (lineup as List).map((dynamic v) => Voyage.fromMap(v)).toList();
+    //   var temp = (lineup as List)
+    //       .map((voyage) {
+    //         var stage = (voyage["stages"] as List?)
+    //             ?.where((s) => s["stagetype"] == 'berthed')
+    //             .firstWhere(
+    //                 (s) =>
+    //                     now.compareTo(DateTime.parse(s["ats"])) >= 0 &&
+    //                     (s["atf"] == null ||
+    //                         now.compareTo(DateTime.parse(s["atf"])) <= 0),
+    //                 orElse: () => null);
+    //         if (stage != null) {
+    //           return {
+    //             ...stage,
+    //             "mmsi": voyage["mmsi"],
+    //             "vessel_name": voyage["vessel_name"],
+    //             "port_code": voyage["port_code"]
+    //           };
+    //         } else {
+    //           return null;
+    //         }
+    //       })
+    //       .where((e) => e != null && e["berthing"]["berth_id"] != null)
+    //       .toList();
+
+    //   return temp
+    //       .map((e) => ({
+    //             'voyage_id': e!['voyage_id'],
+    //             'stage_id': e['stage_id'],
+    //             'mmsi': e['mmsi'],
+    //             'vessel_name': e['vessel_name'],
+    //             'berth_id': e["berthing"]['berth_id'],
+    //             'berth_name': e["berthing"]['berth_name'],
+    //             'boardside_abbr': e["berthing"]['boardside_abbr'],
+    //             'boardside_desc': e["berthing"]['boardside_desc'],
+    //             'boardside_id': e["berthing"]['boardside_id'],
+    //             'port_code': e['port_code']
+    //           }))
+    //       .toList();
   }
 
-  static Future<dynamic> patchVoyage(int voyageId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("PATCH", "/smart-voyages/voyages/$voyageId", jsonEncode(data));
+  static Future<dynamic> getVoyage(int voyageId) async {
+    return RequestInterface._makeRequest(
+        "GET", "/smart-voyages/voyages/$voyageId");
+  }
+
+  static Future<dynamic> patchVoyage(
+      int voyageId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest(
+        "PATCH", "/smart-voyages/voyages/$voyageId", jsonEncode(data));
   }
 
   // static Future<dynamic> postDrafting(int voyageId, Map<String, dynamic> data) async {
@@ -157,10 +164,12 @@ class VoyageInterface with RequestInterface {
   // }
 
   static Future<dynamic> postMooring(Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/voyage/moorings", jsonEncode(data));
+    return RequestInterface._makeRequest(
+        "POST", "/voyage/moorings", jsonEncode(data));
   }
 
-  static Future<dynamic> patchMooring(int mooringId, Map<String, dynamic> data) async {
+  static Future<dynamic> patchMooring(
+      int mooringId, Map<String, dynamic> data) async {
     Map<String, dynamic> dataCopy = new Map.from(data);
     dataCopy.removeWhere((key, value) => ![
           "assign_id",
@@ -172,11 +181,13 @@ class VoyageInterface with RequestInterface {
           "distance",
           "type",
         ].contains(key));
-    return RequestInterface._makeRequest("PATCH", "/voyage/moorings/$mooringId", jsonEncode(dataCopy));
+    return RequestInterface._makeRequest(
+        "PATCH", "/voyage/moorings/$mooringId", jsonEncode(dataCopy));
   }
 
   static Future<dynamic> deleteMooring(int mooringId) async {
-    return RequestInterface._makeRequest("DELETE", "/voyage/moorings/$mooringId");
+    return RequestInterface._makeRequest(
+        "DELETE", "/voyage/moorings/$mooringId");
   }
 }
 
@@ -188,7 +199,8 @@ class HawsersInterface with RequestInterface {
 
 class BollardsInterface with RequestInterface {
   static Future<dynamic> getBollards(int berthId) async {
-    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/bollards/$berthId");
+    return RequestInterface._makeRequest(
+        "GET", "/smart/ports/$_portCode/bollards/$berthId");
   }
 }
 
