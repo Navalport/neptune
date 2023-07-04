@@ -109,52 +109,52 @@ class RequestInterface {
   }
 }
 
-class BerthInterface with RequestInterface {
-  static Future<dynamic> getBerths() async {
+class VoyageInterface with RequestInterface {
+  static Future<List<Voyage>> getVoyages() async {
     // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
-    DateTime now = DateTime.now();
-    var lineup = await RequestInterface._makeRequest(
-        "GET", "/temp/voyage/lineup/$_portCode"); //?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}
-    var temp = (lineup as List?)
-        ?.map((voyage) {
-          var stage = (voyage["stages"] as List?)?.where((s) => s["stagetype"] == 'berthed').firstWhere(
-              (s) =>
-                  (s["ats"] == null || now.compareTo(DateTime.parse(s["ats"])) >= 0) &&
-                  (s["atf"] == null || now.compareTo(DateTime.parse(s["atf"])) <= 0),
-              orElse: () => null);
-          if (stage != null) {
-            return {
-              ...stage,
-              "mmsi": voyage["mmsi"],
-              "vessel_name": voyage["vessel_name"],
-              "port_code": voyage["port_code"]
-            };
-          } else {
-            return null;
-          }
-        })
-        .where((e) => e != null && e["berthing"]["berth_id"] != null)
-        .toList();
+    // DateTime now = DateTime.now();
+    var lineup = await RequestInterface._makeRequest("GET", "/voyages/lineup/$_portCode");
+    return (lineup as List).map((dynamic v) => Voyage.fromMap(v)).toList();
+    //   var temp = (lineup as List)
+    //       .map((voyage) {
+    //         var stage = (voyage["stages"] as List?)
+    //             ?.where((s) => s["stagetype"] == 'berthed')
+    //             .firstWhere(
+    //                 (s) =>
+    //                     now.compareTo(DateTime.parse(s["ats"])) >= 0 &&
+    //                     (s["atf"] == null ||
+    //                         now.compareTo(DateTime.parse(s["atf"])) <= 0),
+    //                 orElse: () => null);
+    //         if (stage != null) {
+    //           return {
+    //             ...stage,
+    //             "mmsi": voyage["mmsi"],
+    //             "vessel_name": voyage["vessel_name"],
+    //             "port_code": voyage["port_code"]
+    //           };
+    //         } else {
+    //           return null;
+    //         }
+    //       })
+    //       .where((e) => e != null && e["berthing"]["berth_id"] != null)
+    //       .toList();
 
-    return temp
-            ?.map((e) => ({
-                  'voyage_id': e!['voyage_id'],
-                  'stage_id': e['stage_id'],
-                  'mmsi': e['mmsi'],
-                  'vessel_name': e['vessel_name'],
-                  'berth_id': e["berthing"]['berth_id'],
-                  'berth_name': e["berthing"]['berth_name'],
-                  'boardside_abbr': e["berthing"]['boardside_abbr'],
-                  'boardside_desc': e["berthing"]['boardside_desc'],
-                  'boardside_id': e["berthing"]['boardside_id'],
-                  'port_code': e['port_code']
-                }))
-            .toList() ??
-        [];
+    //   return temp
+    //       .map((e) => ({
+    //             'voyage_id': e!['voyage_id'],
+    //             'stage_id': e['stage_id'],
+    //             'mmsi': e['mmsi'],
+    //             'vessel_name': e['vessel_name'],
+    //             'berth_id': e["berthing"]['berth_id'],
+    //             'berth_name': e["berthing"]['berth_name'],
+    //             'boardside_abbr': e["berthing"]['boardside_abbr'],
+    //             'boardside_desc': e["berthing"]['boardside_desc'],
+    //             'boardside_id': e["berthing"]['boardside_id'],
+    //             'port_code': e['port_code']
+    //           }))
+    //       .toList();
   }
-}
 
-class VoyagesInterface with RequestInterface {
   static Future<dynamic> getVoyage(int voyageId) async {
     return RequestInterface._makeRequest("GET", "/smart-voyages/voyages/$voyageId");
   }
