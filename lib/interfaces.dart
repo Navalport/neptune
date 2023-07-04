@@ -79,10 +79,11 @@ class RequestInterface {
       http.StreamedResponse response = await request.send(); //.timeout(const Duration(seconds: 5));
       String data = await response.stream.bytesToString();
       // return Future.error("falha de teste");
-      if (data == "") {
-        data = "{}";
+      try {
+        return json.decode(data);
+      } catch (e) {
+        return null;
       }
-      return json.decode(data);
     } catch (e) {
       return Future.error(e.toString());
     }
@@ -113,9 +114,9 @@ class BerthInterface with RequestInterface {
     // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
     DateTime now = DateTime.now();
     var lineup = await RequestInterface._makeRequest(
-        "GET", "/voyage/lineup/$_portCode"); //?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}
-    var temp = (lineup as List)
-        .map((voyage) {
+        "GET", "/temp/voyage/lineup/$_portCode"); //?limit=100&ts=0&tf=${now.millisecondsSinceEpoch}
+    var temp = (lineup as List?)
+        ?.map((voyage) {
           var stage = (voyage["stages"] as List?)?.where((s) => s["stagetype"] == 'berthed').firstWhere(
               (s) =>
                   (s["ats"] == null || now.compareTo(DateTime.parse(s["ats"])) >= 0) &&
@@ -136,19 +137,20 @@ class BerthInterface with RequestInterface {
         .toList();
 
     return temp
-        .map((e) => ({
-              'voyage_id': e!['voyage_id'],
-              'stage_id': e['stage_id'],
-              'mmsi': e['mmsi'],
-              'vessel_name': e['vessel_name'],
-              'berth_id': e["berthing"]['berth_id'],
-              'berth_name': e["berthing"]['berth_name'],
-              'boardside_abbr': e["berthing"]['boardside_abbr'],
-              'boardside_desc': e["berthing"]['boardside_desc'],
-              'boardside_id': e["berthing"]['boardside_id'],
-              'port_code': e['port_code']
-            }))
-        .toList();
+            ?.map((e) => ({
+                  'voyage_id': e!['voyage_id'],
+                  'stage_id': e['stage_id'],
+                  'mmsi': e['mmsi'],
+                  'vessel_name': e['vessel_name'],
+                  'berth_id': e["berthing"]['berth_id'],
+                  'berth_name': e["berthing"]['berth_name'],
+                  'boardside_abbr': e["berthing"]['boardside_abbr'],
+                  'boardside_desc': e["berthing"]['boardside_desc'],
+                  'boardside_id': e["berthing"]['boardside_id'],
+                  'port_code': e['port_code']
+                }))
+            .toList() ??
+        [];
   }
 }
 

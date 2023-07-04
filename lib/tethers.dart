@@ -323,7 +323,8 @@ class _TethersWidgetState extends State<TethersWidget> {
                                                       _refreshing = false;
                                                     });
                                                   },
-                                                  icon: const Icon(Icons.refresh))
+                                                  icon: const Icon(Icons.refresh),
+                                                )
                                         ],
                                       ),
                                     ),
