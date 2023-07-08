@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:mooringapp/extensions.dart';
 import 'package:mooringapp/types.dart';
 
 const String baseURL = "https://api.navalport.com";
@@ -111,123 +112,112 @@ class RequestInterface {
 
 class VoyageInterface with RequestInterface {
   static Future<List<Voyage>> getVoyages() async {
-    // return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/berthed");
-    // DateTime now = DateTime.now();
     var lineup = await RequestInterface._makeRequest("GET", "/voyages/lineup/$_portCode");
     return (lineup as List).map((dynamic v) => Voyage.fromMap(v)).toList();
-    //   var temp = (lineup as List)
-    //       .map((voyage) {
-    //         var stage = (voyage["stages"] as List?)
-    //             ?.where((s) => s["stagetype"] == 'berthed')
-    //             .firstWhere(
-    //                 (s) =>
-    //                     now.compareTo(DateTime.parse(s["ats"])) >= 0 &&
-    //                     (s["atf"] == null ||
-    //                         now.compareTo(DateTime.parse(s["atf"])) <= 0),
-    //                 orElse: () => null);
-    //         if (stage != null) {
-    //           return {
-    //             ...stage,
-    //             "mmsi": voyage["mmsi"],
-    //             "vessel_name": voyage["vessel_name"],
-    //             "port_code": voyage["port_code"]
-    //           };
-    //         } else {
-    //           return null;
-    //         }
-    //       })
-    //       .where((e) => e != null && e["berthing"]["berth_id"] != null)
-    //       .toList();
-
-    //   return temp
-    //       .map((e) => ({
-    //             'voyage_id': e!['voyage_id'],
-    //             'stage_id': e['stage_id'],
-    //             'mmsi': e['mmsi'],
-    //             'vessel_name': e['vessel_name'],
-    //             'berth_id': e["berthing"]['berth_id'],
-    //             'berth_name': e["berthing"]['berth_name'],
-    //             'boardside_abbr': e["berthing"]['boardside_abbr'],
-    //             'boardside_desc': e["berthing"]['boardside_desc'],
-    //             'boardside_id': e["berthing"]['boardside_id'],
-    //             'port_code': e['port_code']
-    //           }))
-    //       .toList();
   }
 
   static Future<dynamic> getVoyage(int voyageId) async {
-    return RequestInterface._makeRequest("GET", "/smart-voyages/voyages/$voyageId");
+    return RequestInterface._makeRequest("GET", "/voyages/details/$voyageId");
   }
 
-  static Future<dynamic> patchVoyage(int voyageId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("PATCH", "/smart-voyages/voyages/$voyageId", jsonEncode(data));
+  static Future<Stage> getStage(int stageId) async {
+    var stage = await RequestInterface._makeRequest("GET", "/voyages/stages/$stageId");
+    return Stage.fromMap(stage);
   }
+
+  static Future<dynamic> postStage(Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("POST", "/voyages/stages", jsonEncode(data));
+  }
+
+  static Future<dynamic> patchStage(int stageId, Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("PATCH", "/voyages/stages/$stageId", jsonEncode(data));
+  }
+}
+
+class BerthInterface with RequestInterface {
+  static List<Berth>? _berths;
+
+  static Future<List<Berth>> getBerths([bool forceReload = false]) async {
+    return (_berths == null || forceReload)
+        ? Future.value(_berths = ((await RequestInterface._makeRequest("GET", "/ports/BRSSZ/berths")) as List)
+            .map((dynamic v) => Berth.fromMap(v))
+            .toList())
+        : Future.value(_berths);
+  }
+
+  // static Future<Berth> getBerthByFenceId(int fenceId) async {
+  //   var berths = await RequestInterface._makeRequest("GET", "/ports/BRSSZ/berths");
+  //   return (berths as List).map<Berth>((dynamic v) => Berth.fromMap(v)).firstWhere((e) => e.fence_id == fenceId);
+  // }
 }
 
 class DockingsInterface with RequestInterface {
   static Future<dynamic> postDrafting(Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/smart-voyages/draftings", jsonEncode(data));
+    return RequestInterface._makeRequest("POST", "/voyages/draftings", jsonEncode(data));
   }
 
   static Future<dynamic> deleteDrafting(int draftingId) async {
-    return RequestInterface._makeRequest("DELETE", "/smart-voyages/draftings/$draftingId");
+    return RequestInterface._makeRequest("DELETE", "/voyages/draftings/$draftingId");
   }
 
-  // static Future<dynamic> postMooring(Map<String, dynamic> data) async {
-  //   return RequestInterface._makeRequest("POST", "/voyage/moorings", jsonEncode(data));
+  static Future<Mooring> postMooring(Map<String, dynamic> data) async {
+    var mooring = await RequestInterface._makeRequest("POST", "/voyages/moorings", jsonEncode(data));
+    return Mooring.fromMap(mooring);
+  }
+
+  // static Future<dynamic> postMooring(int stageId, Map<String, dynamic> data) async {
+  //   final mooring = await RequestInterface._makeRequest(
+  //       "POST",
+  //       "/voyages/moorings",
+  //       jsonEncode({
+  //         "stage_id": stageId,
+  //         "tethers": [data]
+  //       }));
+  //   return mooring;
   // }
 
-  static Future<dynamic> postMooring(int stageId, Map<String, dynamic> data) async {
-    final mooring = await RequestInterface._makeRequest(
-        "POST",
-        "/smart-voyages/moorings",
-        jsonEncode({
-          "stage_id": stageId,
-          "tethers": [data]
-        }));
-    // final tether = await RequestInterface._makeRequest(
-    //     "POST", "/smart-voyages/moorings/${mooring["mooring_id"]}/tethers", jsonEncode(data));
-    return mooring;
-  }
-
   static Future<dynamic> patchMooring(int mooringId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("PATCH", "/smart-voyages/moorings/$mooringId", jsonEncode(data));
+    return RequestInterface._makeRequest("PATCH", "/voyages/moorings/$mooringId", jsonEncode(data));
   }
 
   static Future<dynamic> deleteMooring(int mooringId) async {
-    return RequestInterface._makeRequest("DELETE", "/voyage/moorings/$mooringId");
+    return RequestInterface._makeRequest("DELETE", "/voyages/moorings/$mooringId");
   }
 
-  static Future<dynamic> postTether(int mooringId, Map<String, dynamic> data) async {
-    return RequestInterface._makeRequest("POST", "/smart-voyages/moorings/$mooringId/tethers", jsonEncode(data));
+  static Future<dynamic> postTether(Map<String, dynamic> data) async {
+    return RequestInterface._makeRequest("POST", "/voyages/tethers", jsonEncode(data));
   }
 
-  static Future<dynamic> patchTether(int mooringId, int tetherId, Map<String, dynamic> data) async {
+  static Future<dynamic> patchTether(int tetherId, Map<String, dynamic> data) async {
     final tether = await RequestInterface._makeRequest(
-        "PATCH", "/smart-voyages/moorings/$mooringId/tethers/$tetherId", jsonEncode(data));
+      "PATCH",
+      "/voyages/tethers/$tetherId",
+      jsonEncode(data..omit(["tether_id", "mooring_id", "hawser_id", "bollard_id"])),
+    );
     return tether;
   }
 
-  static Future<dynamic> deleteTether(int mooringId, int tetherId) async {
-    return RequestInterface._makeRequest("DELETE", "/smart-voyages/moorings/$mooringId/tethers/$tetherId");
+  static Future<dynamic> deleteTether(int tetherId) async {
+    return RequestInterface._makeRequest("DELETE", "/voyages/tethers/$tetherId");
   }
 
   static Future<dynamic> bindTether(
       int mooringId, int tetherId, Map<String, dynamic> mooringData, Map<String, dynamic> tetherData) async {
-    await DockingsInterface.patchMooring(mooringId, mooringData);
-    return DockingsInterface.patchTether(mooringId, tetherId, tetherData);
+    await DockingsInterface.patchMooring(
+      mooringId,
+      mooringData.omit(["mooring_id", "tstamp", "tethers", "stage_id"]),
+    );
+    return DockingsInterface.patchTether(
+      tetherId,
+      tetherData.omit(["tether_id", "mooring_id", "hawser_id", "bollard_id"]),
+    );
   }
 }
 
 class HawsersInterface with RequestInterface {
-  static Future<dynamic> getHawsers() async {
-    return RequestInterface._makeRequest("GET", "/model/hawsers");
-  }
-}
-
-class BollardsInterface with RequestInterface {
-  static Future<dynamic> getBollards(int berthId) async {
-    return RequestInterface._makeRequest("GET", "/smart/ports/$_portCode/bollards/$berthId");
+  static Future<List<Hawser>> getHawsers() async {
+    var hawsers = await RequestInterface._makeRequest("GET", "/model/hawsers");
+    return (hawsers as List).map((dynamic v) => Hawser.fromMap(v)).toList();
   }
 }
 

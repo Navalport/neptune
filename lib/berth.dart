@@ -9,18 +9,19 @@ import 'package:mooringapp/drafting.dart';
 import 'package:mooringapp/mooring.dart';
 import 'package:mooringapp/types.dart';
 
-class DockingWidget extends StatefulWidget {
-  final Berth stage;
-  const DockingWidget({Key? key, required this.stage}) : super(key: key);
+class BerthWidget extends StatefulWidget {
+  final Voyage voyage;
+  final Stage stage;
+  final Berth berth;
+  const BerthWidget({Key? key, required this.voyage, required this.berth, required this.stage}) : super(key: key);
 
   @override
-  State<DockingWidget> createState() => _DockingWidgetState();
+  State<BerthWidget> createState() => _BerthWidgetState();
 }
 
-class _DockingWidgetState extends State<DockingWidget> {
-  Future<dynamic> _voyage$ = Completer().future;
-  Future<dynamic> _hawsers$ = Completer().future;
-  Future<dynamic> _bollards$ = Completer().future;
+class _BerthWidgetState extends State<BerthWidget> {
+  Future<Stage> _stage$ = Completer<Stage>().future;
+  Future<List<Hawser>> _hawsers$ = Completer<List<Hawser>>().future;
 
   @override
   void initState() {
@@ -37,9 +38,8 @@ class _DockingWidgetState extends State<DockingWidget> {
   }
 
   Future<void> loadData() async {
-    _voyage$ = VoyagesInterface.getVoyage(widget.stage.voyageId);
+    _stage$ = VoyageInterface.getStage(widget.stage.stage_id);
     _hawsers$ = HawsersInterface.getHawsers();
-    _bollards$ = BollardsInterface.getBollards(widget.stage.berthId);
   }
 
   @override
@@ -65,12 +65,12 @@ class _DockingWidgetState extends State<DockingWidget> {
               child: Column(
                 children: [
                   Text(
-                    widget.stage.vesselName,
+                    widget.voyage.vessel_name ?? "Embarcação sem nome",
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.stage.berthName,
+                    widget.berth.berth_name,
                     style: Theme.of(context).textTheme.bodyLarge,
                   )
                 ],
@@ -82,7 +82,7 @@ class _DockingWidgetState extends State<DockingWidget> {
             ),
             Expanded(
               child: FutureBuilder<dynamic>(
-                future: Future.wait([_voyage$, _hawsers$, _bollards$]),
+                future: Future.wait([_stage$, _hawsers$]),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const Center(
@@ -106,17 +106,17 @@ class _DockingWidgetState extends State<DockingWidget> {
                       ),
                     );
                   } else if (snapshot.hasData) {
-                    var voyage = snapshot.data[0];
-                    var hawsers = snapshot.data[1];
-                    var bollards = snapshot.data[2];
+                    Stage stage = snapshot.data[0];
+                    List<Hawser> hawsers = snapshot.data[1];
+                    var bollards = widget.berth.bollards;
 
-                    VoyageBehaviorSubject().setValue(voyage);
+                    StageBehaviorSubject().setValue(stage);
 
                     return TabBarView(
                       children: [
-                        DrafitingWidget(berthing: widget.stage),
-                        TethersWidget(berthing: widget.stage, hawsers: hawsers, bollards: bollards),
-                        MooringWidget(berthing: widget.stage, hawsers: hawsers, bollards: bollards),
+                        DrafitingWidget(stage: stage),
+                        TethersWidget(stage: stage, hawsers: hawsers, bollards: bollards),
+                        MooringWidget(stage: stage, hawsers: hawsers, bollards: bollards),
                         // MessagesWidget(berth: widget.berth, voyage: snapshot.data),
                       ],
                     );

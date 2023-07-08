@@ -7,33 +7,26 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:mooringapp/interfaces.dart';
 import 'package:mooringapp/types.dart';
-import 'dart:math' as math;
-
-enum Position { mean, aft, mid, fore }
-
-enum Type { declared, arrival, loading, leaving }
 
 class DrafitingWidget extends StatefulWidget {
-  final Berth berthing;
+  final Stage stage;
 
-  const DrafitingWidget({Key? key, required this.berthing}) : super(key: key);
+  const DrafitingWidget({Key? key, required this.stage}) : super(key: key);
 
   @override
   State<DrafitingWidget> createState() => _DrafitingWidgetState();
 }
 
 class _DrafitingWidgetState extends State<DrafitingWidget> {
-  Position _position = Position.mid;
-  Type _type = Type.declared;
+  DraftPosition _position = DraftPosition.mid;
+  DraftType _type = DraftType.declared;
   final _draftController = TextEditingController();
   DateTime? _dateTime;
   final _dateTimeController = TextEditingController();
   bool _inProgress = false;
-  bool _inProgressBoardside = false;
+  // bool _inProgressBoardside = false;
   bool _refreshing = false;
-  List<dynamic>? _draftingList;
-  VoyageBehaviorSubject voyage$ = VoyageBehaviorSubject();
-  dynamic _stage;
+  StageBehaviorSubject stage$ = StageBehaviorSubject();
 
   @override
   void dispose() {
@@ -45,15 +38,13 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: voyage$.getStream(),
-        builder: (context, snapshot) {
+        stream: stage$.getStream(),
+        builder: (context, AsyncSnapshot<Stage?> snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          dynamic voyage = snapshot.data;
-          _stage = (voyage["stages"] as List).lastWhere((e) => e["stage_id"] == widget.berthing.stageId);
-          _draftingList = _stage['draftings']?.reversed.toList();
+          Stage stage = snapshot.data!;
           // _inProgress = false;
           // _inProgressBoardside = false;
           // _refreshing = false;
@@ -76,27 +67,28 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                           ),
                           child: Column(
                             children: [
-                              _inProgressBoardside
-                                  ? const Center(
-                                      child: CircularProgressIndicator(),
-                                    )
-                                  : InkWell(
-                                      onTap: () async {
-                                        // setState(() {
-                                        //   _inProgressBoardside = true;
-                                        // });
-                                        // await VoyageInterface.patchVoyage(
-                                        //     voyage["voyage_id"], {"boardside_id": voyage["boardside_id"] == 1 ? 2 : 1});
-                                        // await voyage$.refresh(voyage["voyage_id"]);
-                                        // setState(() {
-                                        //   _inProgressBoardside = false;
-                                        // });
-                                      },
-                                      child: Transform(
-                                          alignment: Alignment.center,
-                                          transform: Matrix4.rotationY(voyage["boardside_id"] == 1 ? 0 : math.pi),
-                                          child: SvgPicture.asset('assets/SHIP_NP_BLUE.svg')),
-                                    ),
+                              // _inProgressBoardside
+                              //     ? const Center(
+                              //         child: CircularProgressIndicator(),
+                              //       )
+                              //     : InkWell(
+                              //         onTap: () async {
+                              //           // setState(() {
+                              //           //   _inProgressBoardside = true;
+                              //           // });
+                              //           // await VoyageInterface.patchVoyage(
+                              //           //     stage.stage_id, {"boardside_id": voyage["boardside_id"] == 1 ? 2 : 1});
+                              //           // await voyage$.refresh(stage.stage_id);
+                              //           // setState(() {
+                              //           //   _inProgressBoardside = false;
+                              //           // });
+                              //         },
+                              //         child: Transform(
+                              //             alignment: Alignment.center,
+                              //             transform: Matrix4.rotationY(voyage["boardside_id"] == 1 ? 0 : math.pi),
+                              //             child: SvgPicture.asset('assets/SHIP_NP_BLUE.svg')),
+                              //       ),
+                              SvgPicture.asset('assets/SHIP_NP_BLUE.svg'),
                               const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -104,10 +96,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Vante"),
-                                      Radio<Position>(
-                                        value: Position.aft,
+                                      Radio<DraftPosition>(
+                                        value: DraftPosition.aft,
                                         groupValue: _position,
-                                        onChanged: (Position? val) {
+                                        onChanged: (DraftPosition? val) {
                                           setState(() {
                                             _position = val ?? _position;
                                           });
@@ -118,10 +110,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Médio"),
-                                      Radio<Position>(
-                                        value: Position.mid,
+                                      Radio<DraftPosition>(
+                                        value: DraftPosition.mid,
                                         groupValue: _position,
-                                        onChanged: (Position? val) {
+                                        onChanged: (DraftPosition? val) {
                                           setState(() {
                                             _position = val ?? _position;
                                           });
@@ -132,10 +124,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Ré"),
-                                      Radio<Position>(
-                                        value: Position.fore,
+                                      Radio<DraftPosition>(
+                                        value: DraftPosition.fore,
                                         groupValue: _position,
-                                        onChanged: (Position? val) {
+                                        onChanged: (DraftPosition? val) {
                                           setState(() {
                                             _position = val ?? _position;
                                           });
@@ -159,10 +151,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Declarado"),
-                                      Radio<Type>(
-                                        value: Type.declared,
+                                      Radio<DraftType>(
+                                        value: DraftType.declared,
                                         groupValue: _type,
-                                        onChanged: (Type? val) {
+                                        onChanged: (DraftType? val) {
                                           setState(() {
                                             _type = val ?? _type;
                                           });
@@ -173,10 +165,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Chegada"),
-                                      Radio<Type>(
-                                        value: Type.arrival,
+                                      Radio<DraftType>(
+                                        value: DraftType.arrival,
                                         groupValue: _type,
-                                        onChanged: (Type? val) {
+                                        onChanged: (DraftType? val) {
                                           setState(() {
                                             _type = val ?? _type;
                                           });
@@ -187,10 +179,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Carregamento"),
-                                      Radio<Type>(
-                                        value: Type.loading,
+                                      Radio<DraftType>(
+                                        value: DraftType.loading,
                                         groupValue: _type,
-                                        onChanged: (Type? val) {
+                                        onChanged: (DraftType? val) {
                                           setState(() {
                                             _type = val ?? _type;
                                           });
@@ -201,10 +193,10 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                   Column(
                                     children: [
                                       const Text("Partida"),
-                                      Radio<Type>(
-                                        value: Type.leaving,
+                                      Radio<DraftType>(
+                                        value: DraftType.leaving,
                                         groupValue: _type,
-                                        onChanged: (Type? val) {
+                                        onChanged: (DraftType? val) {
                                           setState(() {
                                             _type = val ?? _type;
                                           });
@@ -272,19 +264,18 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                           _inProgress = true;
                                         });
                                         await DockingsInterface.postDrafting({
-                                          'assign_id': 1,
+                                          'stage_id': widget.stage.stage_id,
                                           'draft': double.parse(_draftController.text.toString()),
-                                          'pos': EnumToString.convertToString(_position),
+                                          'position': EnumToString.convertToString(_position),
                                           'type': EnumToString.convertToString(_type),
-                                          't': _dateTime?.toIso8601String(),
-                                          'stage_id': widget.berthing.stageId
+                                          'date': _dateTime?.toIso8601String(),
                                         }).onError((error, stackTrace) {
                                           setState(() {
                                             _inProgress = false;
                                           });
                                           _showErrorDialog(error.toString());
                                         });
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress = false;
                                         });
@@ -304,7 +295,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                               border: Border.all(color: const Color(0xFF36393F)),
                               color: const Color(0xFF292B2F),
                             ),
-                            child: _draftingList == null
+                            child: stage.draftings == null
                                 ? Center(
                                     child: IntrinsicHeight(
                                       child: Column(
@@ -320,7 +311,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                                     setState(() {
                                                       _refreshing = true;
                                                     });
-                                                    await voyage$.refresh(voyage["voyage_id"]);
+                                                    await stage$.refresh(stage.stage_id);
                                                     setState(() {
                                                       _refreshing = false;
                                                     });
@@ -333,15 +324,15 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                 : Scrollbar(
                                     radius: const Radius.circular(5),
                                     child: RefreshIndicator(
-                                      onRefresh: () => voyage$.refresh(voyage["voyage_id"]),
+                                      onRefresh: () => stage$.refresh(stage.stage_id),
                                       child: ListView.builder(
-                                        itemCount: _draftingList!.length,
+                                        itemCount: stage.draftings!.length,
                                         itemBuilder: (context, index) {
-                                          dynamic drafting = _draftingList![index];
+                                          Drafting drafting = stage.draftings![index];
                                           return Card(
                                             child: InkWell(
                                               onLongPress: () {
-                                                _showDeleteDialog(drafting["drafting_id"], voyage["voyage_id"]);
+                                                _showDeleteDialog(drafting.drafting_id, stage.stage_id);
                                               },
                                               child: Padding(
                                                 padding: const EdgeInsets.all(8.0),
@@ -351,7 +342,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                                     Flexible(
                                                         flex: 4,
                                                         child: Text(
-                                                            "Calado ${_parsePos(drafting['pos'])} ${_parseType(drafting['type'])}")),
+                                                            "Calado ${_parsePos(drafting.position)} ${_parseType(drafting.type)}")),
                                                     Flexible(
                                                       flex: 3,
                                                       child: Row(
@@ -359,9 +350,9 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                                         children: [
                                                           Text(
                                                             DateFormat("HH:mm dd/MMM")
-                                                                .format(DateTime.parse(drafting['t'])),
+                                                                .format(DateTime.parse(drafting.date)),
                                                           ), //12:00 10/nov
-                                                          Text("${drafting['draft']}m"),
+                                                          Text("${drafting.draft}m"),
                                                         ],
                                                       ),
                                                     )
@@ -386,16 +377,16 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
         });
   }
 
-  String _parsePos(String pos) {
+  String _parsePos(DraftPosition pos) {
     switch (pos) {
-      case 'mean':
-      case 'mid':
+      case DraftPosition.mean:
+      case DraftPosition.mid:
         return 'Médio';
 
-      case 'aft':
+      case DraftPosition.aft:
         return 'Vante';
 
-      case 'fore':
+      case DraftPosition.fore:
         return 'Ré';
 
       default:
@@ -403,18 +394,18 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
     }
   }
 
-  String _parseType(String type) {
+  String _parseType(DraftType type) {
     switch (type) {
-      case 'declared':
+      case DraftType.declared:
         return 'Declarado';
 
-      case 'arrival':
+      case DraftType.arrival:
         return 'Chegada';
 
-      case 'loading':
+      case DraftType.loading:
         return 'Carregamento';
 
-      case 'leaving':
+      case DraftType.leaving:
         return 'Partida';
 
       default:
@@ -473,7 +464,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                   _inProgress = true;
                 });
                 await DockingsInterface.deleteDrafting(draftingId);
-                await voyage$.refresh(voyageId);
+                await stage$.refresh(voyageId);
                 setState(() {
                   _inProgress = false;
                 });

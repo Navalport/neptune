@@ -2,96 +2,101 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'interfaces.dart';
 
-class Berth {
-  int voyageId;
-  int stageId;
-  int mmsi;
-  String vesselName;
-  int berthId;
-  String berthName;
-  String portCode;
-  String boardsideAbbr;
-  String boardsideDesc;
-  int boardsideId;
+enum DraftPosition { mean, aft, mid, fore }
 
-  Berth(
-      {required this.voyageId,
-      required this.stageId,
-      required this.mmsi,
-      required this.vesselName,
-      required this.berthId,
-      required this.berthName,
-      required this.portCode,
-      required this.boardsideAbbr,
-      required this.boardsideDesc,
-      required this.boardsideId});
+enum DraftType { declared, arrival, loading, leaving }
 
-  factory Berth.fromJson(Map<String, dynamic> json) {
-    return Berth(
-      voyageId: json['voyage_id'],
-      stageId: json['stage_id'],
-      mmsi: json['mmsi'],
-      vesselName: json['vessel_name'],
-      berthId: json['berth_id'],
-      berthName: json['berth_name'],
-      boardsideAbbr: json['boardside_abbr'],
-      boardsideDesc: json['boardside_desc'],
-      boardsideId: json['boardside_id'],
-      portCode: json['port_code'],
-    );
+class StageBehaviorSubject {
+  static final StageBehaviorSubject _singleton = StageBehaviorSubject._internal();
+  final BehaviorSubject<Stage> _stageController = BehaviorSubject<Stage>();
+
+  factory StageBehaviorSubject() {
+    return _singleton;
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['voyage_id'] = voyageId;
-    data['mmsi'] = mmsi;
-    data['vessel_name'] = vesselName;
-    data['berth_id'] = berthId;
-    data['berth_name'] = berthName;
-    data['port_code'] = portCode;
-    data['boardside_abbr'] = boardsideAbbr;
-    data['boardside_desc'] = boardsideDesc;
-    data['boardside_id'] = boardsideId;
-    return data;
+  Stream<Stage> getStream() {
+    return _stageController.stream;
   }
+
+  void setValue(Stage value) {
+    _stageController.add(value);
+  }
+
+  Future<void> refresh(int stageId) async {
+    var value = await VoyageInterface.getStage(stageId);
+    _stageController.add(value);
+    return;
+  }
+
+  StageBehaviorSubject._internal();
+}
+
+class VoyagesBehaviorSubject {
+  static final VoyagesBehaviorSubject _singleton = VoyagesBehaviorSubject._internal();
+  final BehaviorSubject<List<Voyage>> _voyagesController = BehaviorSubject<List<Voyage>>();
+
+  factory VoyagesBehaviorSubject() {
+    return _singleton;
+  }
+
+  Stream<List<Voyage>> getStream() {
+    return _voyagesController.stream;
+  }
+
+  void setValue(List<Voyage> value) {
+    _voyagesController.add(value);
+  }
+
+  Future<void> refresh() async {
+    var value = await VoyageInterface.getVoyages();
+    _voyagesController.add(value);
+    return;
+  }
+
+  VoyagesBehaviorSubject._internal();
 }
 
 class VoyageBehaviorSubject {
-  static final VoyageBehaviorSubject _singleton =
-      VoyageBehaviorSubject._internal();
-  final BehaviorSubject<dynamic> _voyageController = BehaviorSubject<dynamic>();
+  static final VoyageBehaviorSubject _singleton = VoyageBehaviorSubject._internal();
+  final BehaviorSubject<Voyage> _voyageController = BehaviorSubject<Voyage>();
 
   factory VoyageBehaviorSubject() {
     return _singleton;
   }
 
-  Stream<dynamic> getStream() {
+  Stream<Voyage> getStream() {
     return _voyageController.stream;
   }
 
-  void setValue(dynamic value) {
+  void setValue(Voyage value) {
     _voyageController.add(value);
   }
 
   Future<void> refresh(int voyageId) async {
-    var value = await VoyagesInterface.getVoyage(voyageId);
-    _voyageController.add(value);
+    var value = await VoyageInterface.getVoyage(voyageId);
+    _voyageController.add(Voyage.fromMap(value));
+    return;
+  }
+
+  Future<void> refreshFromList(int voyageId) async {
+    VoyagesBehaviorSubject voyages$ = VoyagesBehaviorSubject();
+
+    await voyages$.refresh();
+    voyages$
+        .getStream()
+        .first
+        .then((value) => _voyageController.add(value.firstWhere((voyage) => voyage.voyage_id == voyageId)));
     return;
   }
 
   VoyageBehaviorSubject._internal();
 }
-
-// enum Boardside {
-//   BE = 1;
-//   BB = 2;
-//   CB = 3;
-//   CBB = 4;
-// }
 
 class InfinityDateTime {
   late bool _isInfinity;
@@ -119,16 +124,16 @@ class InfinityDateTime {
 }
 
 class Estimate {
-  num estimate_id;
-  num voyage_id;
-  num stage_id;
+  int estimate_id;
+  int voyage_id;
+  int stage_id;
   String tstamp;
-  num? fence_id;
+  int? fence_id;
   DateTime ets;
   DateTime etf;
   bool official;
   bool confirmed;
-  num sequential;
+  int sequential;
 
   Estimate({
     required this.estimate_id,
@@ -144,16 +149,16 @@ class Estimate {
   });
 
   Estimate copyWith({
-    num? estimate_id,
-    num? voyage_id,
-    num? stage_id,
+    int? estimate_id,
+    int? voyage_id,
+    int? stage_id,
     String? tstamp,
-    num? fence_id,
+    int? fence_id,
     DateTime? ets,
     DateTime? etf,
     bool? official,
     bool? confirmed,
-    num? sequential,
+    int? sequential,
   }) {
     return Estimate(
       estimate_id: estimate_id ?? this.estimate_id,
@@ -186,23 +191,22 @@ class Estimate {
 
   factory Estimate.fromMap(Map<String, dynamic> map) {
     return Estimate(
-      estimate_id: map['estimate_id'] as num,
-      voyage_id: map['voyage_id'] as num,
-      stage_id: map['stage_id'] as num,
+      estimate_id: map['estimate_id'] as int,
+      voyage_id: map['voyage_id'] as int,
+      stage_id: map['stage_id'] as int,
       tstamp: map['tstamp'] as String,
-      fence_id: map['fence_id'] != null ? map['fence_id'] as num : null,
+      fence_id: map['fence_id'] != null ? map['fence_id'] as int : null,
       ets: DateTime.parse(map['ets']),
       etf: DateTime.parse(map['etf']),
       official: map['official'] as bool,
       confirmed: map['confirmed'] as bool,
-      sequential: map['sequential'] as num,
+      sequential: map['sequential'] as int,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory Estimate.fromJson(String source) =>
-      Estimate.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Estimate.fromJson(String source) => Estimate.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -241,7 +245,7 @@ class Estimate {
 }
 
 class Org {
-  num org_id;
+  int org_id;
   String id;
   String id_type;
   String name;
@@ -258,7 +262,7 @@ class Org {
   });
 
   Org copyWith({
-    num? org_id,
+    int? org_id,
     String? id,
     String? id_type,
     String? name,
@@ -288,7 +292,7 @@ class Org {
 
   factory Org.fromMap(Map<String, dynamic> map) {
     return Org(
-      org_id: map['org_id'] as num,
+      org_id: map['org_id'] as int,
       id: map['id'] as String,
       id_type: map['id_type'] as String,
       name: map['name'] as String,
@@ -299,8 +303,7 @@ class Org {
 
   String toJson() => json.encode(toMap());
 
-  factory Org.fromJson(String source) =>
-      Org.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Org.fromJson(String source) => Org.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -321,28 +324,435 @@ class Org {
 
   @override
   int get hashCode {
-    return org_id.hashCode ^
-        id.hashCode ^
-        id_type.hashCode ^
-        name.hashCode ^
-        desc.hashCode ^
-        picture.hashCode;
+    return org_id.hashCode ^ id.hashCode ^ id_type.hashCode ^ name.hashCode ^ desc.hashCode ^ picture.hashCode;
+  }
+}
+
+class Drafting {
+  int drafting_id;
+  String tstamp;
+  int stage_id;
+  num draft;
+  DraftPosition position;
+  DraftType type;
+  String date;
+
+  Drafting({
+    required this.drafting_id,
+    required this.tstamp,
+    required this.stage_id,
+    required this.draft,
+    required this.position,
+    required this.type,
+    required this.date,
+  });
+
+  Drafting copyWith({
+    int? drafting_id,
+    String? tstamp,
+    int? stage_id,
+    num? draft,
+    DraftPosition? position,
+    DraftType? type,
+    String? date,
+  }) {
+    return Drafting(
+      drafting_id: drafting_id ?? this.drafting_id,
+      tstamp: tstamp ?? this.tstamp,
+      stage_id: stage_id ?? this.stage_id,
+      draft: draft ?? this.draft,
+      position: position ?? this.position,
+      type: type ?? this.type,
+      date: date ?? this.date,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'drafting_id': drafting_id,
+      'tstamp': tstamp,
+      'stage_id': stage_id,
+      'draft': draft,
+      'position': EnumToString.convertToString(position),
+      'type': EnumToString.convertToString(type),
+      'date': date,
+    };
+  }
+
+  factory Drafting.fromMap(Map<String, dynamic> map) {
+    return Drafting(
+      drafting_id: map['drafting_id']?.toInt() ?? 0,
+      tstamp: map['tstamp'] ?? '',
+      stage_id: map['stage_id']?.toInt() ?? 0,
+      draft: map['draft'] ?? 0,
+      position: DraftPosition.values.byName(map['position']),
+      type: DraftType.values.byName(map['type']),
+      date: map['date'] ?? '',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Drafting.fromJson(String source) => Drafting.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'Drafting(drafting_id: $drafting_id, tstamp: $tstamp, stage_id: $stage_id, draft: $draft, position: $position, type: $type, date: $date)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Drafting &&
+        other.drafting_id == drafting_id &&
+        other.tstamp == tstamp &&
+        other.stage_id == stage_id &&
+        other.draft == draft &&
+        other.position == position &&
+        other.type == type &&
+        other.date == date;
+  }
+
+  @override
+  int get hashCode {
+    return drafting_id.hashCode ^
+        tstamp.hashCode ^
+        stage_id.hashCode ^
+        draft.hashCode ^
+        position.hashCode ^
+        type.hashCode ^
+        date.hashCode;
+  }
+}
+
+class Hawser {
+  int hawser_id;
+  String hawser_desc;
+  num x;
+  num y;
+
+  Hawser({
+    required this.hawser_id,
+    required this.hawser_desc,
+    required this.x,
+    required this.y,
+  });
+
+  Hawser copyWith({
+    int? hawser_id,
+    String? hawser_desc,
+    num? x,
+    num? y,
+  }) {
+    return Hawser(
+      hawser_id: hawser_id ?? this.hawser_id,
+      hawser_desc: hawser_desc ?? this.hawser_desc,
+      x: x ?? this.x,
+      y: y ?? this.y,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'hawser_id': hawser_id,
+      'hawser_desc': hawser_desc,
+      'x': x,
+      'y': y,
+    };
+  }
+
+  factory Hawser.fromMap(Map<String, dynamic> map) {
+    return Hawser(
+      hawser_id: map['hawser_id']?.toInt() ?? 0,
+      hawser_desc: map['hawser_desc'] ?? '',
+      x: map['x'] ?? 0,
+      y: map['y'] ?? 0,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Hawser.fromJson(String source) => Hawser.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'Hawser(hawser_id: $hawser_id, hawser_desc: $hawser_desc, x: $x, y: $y)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Hawser &&
+        other.hawser_id == hawser_id &&
+        other.hawser_desc == hawser_desc &&
+        other.x == x &&
+        other.y == y;
+  }
+
+  @override
+  int get hashCode {
+    return hawser_id.hashCode ^ hawser_desc.hashCode ^ x.hashCode ^ y.hashCode;
+  }
+}
+
+class Tether {
+  int tether_id;
+  int mooring_id;
+  int hawser_id;
+  int bollard_id;
+  bool? first_tie;
+  bool? last_tie;
+  bool? first_untie;
+  bool? last_untie;
+  num? bow_distance;
+  num? stern_distance;
+  bool? pristine;
+  bool broken;
+
+  Tether({
+    required this.tether_id,
+    required this.mooring_id,
+    required this.hawser_id,
+    required this.bollard_id,
+    this.first_tie,
+    this.last_tie,
+    this.first_untie,
+    this.last_untie,
+    this.bow_distance,
+    this.stern_distance,
+    this.pristine,
+    required this.broken,
+  });
+
+  Tether copyWith({
+    int? tether_id,
+    int? mooring_id,
+    int? hawser_id,
+    int? bollard_id,
+    bool? first_tie,
+    bool? last_tie,
+    bool? first_untie,
+    bool? last_untie,
+    num? bow_distance,
+    num? stern_distance,
+    bool? pristine,
+    bool? broken,
+  }) {
+    return Tether(
+      tether_id: tether_id ?? this.tether_id,
+      mooring_id: mooring_id ?? this.mooring_id,
+      hawser_id: hawser_id ?? this.hawser_id,
+      bollard_id: bollard_id ?? this.bollard_id,
+      first_tie: first_tie ?? this.first_tie,
+      last_tie: last_tie ?? this.last_tie,
+      first_untie: first_untie ?? this.first_untie,
+      last_untie: last_untie ?? this.last_untie,
+      bow_distance: bow_distance ?? this.bow_distance,
+      stern_distance: stern_distance ?? this.stern_distance,
+      pristine: pristine ?? this.pristine,
+      broken: broken ?? this.broken,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'tether_id': tether_id,
+      'mooring_id': mooring_id,
+      'hawser_id': hawser_id,
+      'bollard_id': bollard_id,
+      'first_tie': first_tie,
+      'last_tie': last_tie,
+      'first_untie': first_untie,
+      'last_untie': last_untie,
+      'bow_distance': bow_distance,
+      'stern_distance': stern_distance,
+      'pristine': pristine,
+      'broken': broken,
+    };
+  }
+
+  factory Tether.fromMap(Map<String, dynamic> map) {
+    return Tether(
+      tether_id: map['tether_id']?.toInt() ?? 0,
+      mooring_id: map['mooring_id']?.toInt() ?? 0,
+      hawser_id: map['hawser_id']?.toInt() ?? 0,
+      bollard_id: map['bollard_id']?.toInt() ?? 0,
+      first_tie: map['first_tie'],
+      last_tie: map['last_tie'],
+      first_untie: map['first_untie'],
+      last_untie: map['last_untie'],
+      bow_distance: map['bow_distance'],
+      stern_distance: map['stern_distance'],
+      pristine: map['pristine'],
+      broken: map['broken'] ?? false,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Tether.fromJson(String source) => Tether.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'Tether(tether_id: $tether_id, mooring_id: $mooring_id, hawser_id: $hawser_id, bollard_id: $bollard_id, first_tie: $first_tie, last_tie: $last_tie, first_untie: $first_untie, last_untie: $last_untie, bow_distance: $bow_distance, stern_distance: $stern_distance, pristine: $pristine, broken: $broken)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Tether &&
+        other.tether_id == tether_id &&
+        other.mooring_id == mooring_id &&
+        other.hawser_id == hawser_id &&
+        other.bollard_id == bollard_id &&
+        other.first_tie == first_tie &&
+        other.last_tie == last_tie &&
+        other.first_untie == first_untie &&
+        other.last_untie == last_untie &&
+        other.bow_distance == bow_distance &&
+        other.stern_distance == stern_distance &&
+        other.pristine == pristine &&
+        other.broken == broken;
+  }
+
+  @override
+  int get hashCode {
+    return tether_id.hashCode ^
+        mooring_id.hashCode ^
+        hawser_id.hashCode ^
+        bollard_id.hashCode ^
+        first_tie.hashCode ^
+        last_tie.hashCode ^
+        first_untie.hashCode ^
+        last_untie.hashCode ^
+        bow_distance.hashCode ^
+        stern_distance.hashCode ^
+        pristine.hashCode ^
+        broken.hashCode;
+  }
+}
+
+class Mooring {
+  int mooring_id;
+  String tstamp;
+  List<Tether> tethers;
+  int stage_id;
+  String? tie_started_at;
+  String? tie_finished_at;
+  String? untie_started_at;
+  String? untie_finished_at;
+
+  Mooring({
+    required this.mooring_id,
+    required this.tstamp,
+    required this.tethers,
+    required this.stage_id,
+    this.tie_started_at,
+    this.tie_finished_at,
+    this.untie_started_at,
+    this.untie_finished_at,
+  });
+
+  Mooring copyWith({
+    int? mooring_id,
+    String? tstamp,
+    List<Tether>? tethers,
+    int? stage_id,
+    String? tie_started_at,
+    String? tie_finished_at,
+    String? untie_started_at,
+    String? untie_finished_at,
+  }) {
+    return Mooring(
+      mooring_id: mooring_id ?? this.mooring_id,
+      tstamp: tstamp ?? this.tstamp,
+      tethers: tethers ?? this.tethers,
+      stage_id: stage_id ?? this.stage_id,
+      tie_started_at: tie_started_at ?? this.tie_started_at,
+      tie_finished_at: tie_finished_at ?? this.tie_finished_at,
+      untie_started_at: untie_started_at ?? this.untie_started_at,
+      untie_finished_at: untie_finished_at ?? this.untie_finished_at,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'mooring_id': mooring_id,
+      'tstamp': tstamp,
+      'tethers': tethers.map((x) => x.toMap()).toList(),
+      'stage_id': stage_id,
+      'tie_started_at': tie_started_at,
+      'tie_finished_at': tie_finished_at,
+      'untie_started_at': untie_started_at,
+      'untie_finished_at': untie_finished_at,
+    };
+  }
+
+  factory Mooring.fromMap(Map<String, dynamic> map) {
+    return Mooring(
+      mooring_id: map['mooring_id']?.toInt() ?? 0,
+      tstamp: map['tstamp'] ?? '',
+      tethers: List<Tether>.from(map['tethers']?.map((x) => Tether.fromMap(x)) ?? []),
+      stage_id: map['stage_id']?.toInt() ?? 0,
+      tie_started_at: map['tie_started_at'],
+      tie_finished_at: map['tie_finished_at'],
+      untie_started_at: map['untie_started_at'],
+      untie_finished_at: map['untie_finished_at'],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Mooring.fromJson(String source) => Mooring.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'Mooring(mooring_id: $mooring_id, tstamp: $tstamp, tethers: $tethers, stage_id: $stage_id, tie_started_at: $tie_started_at, tie_finished_at: $tie_finished_at, untie_started_at: $untie_started_at, untie_finished_at: $untie_finished_at)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Mooring &&
+        other.mooring_id == mooring_id &&
+        other.tstamp == tstamp &&
+        listEquals(other.tethers, tethers) &&
+        other.stage_id == stage_id &&
+        other.tie_started_at == tie_started_at &&
+        other.tie_finished_at == tie_finished_at &&
+        other.untie_started_at == untie_started_at &&
+        other.untie_finished_at == untie_finished_at;
+  }
+
+  @override
+  int get hashCode {
+    return mooring_id.hashCode ^
+        tstamp.hashCode ^
+        tethers.hashCode ^
+        stage_id.hashCode ^
+        tie_started_at.hashCode ^
+        tie_finished_at.hashCode ^
+        untie_started_at.hashCode ^
+        untie_finished_at.hashCode;
   }
 }
 
 class Stage {
-  num stage_id;
+  int stage_id;
   String tstamp;
-  num voyage_id;
-  num stagetype_id;
-  num sequential;
-  num? fence_id;
+  int voyage_id;
+  int stagetype_id;
+  int sequential;
+  int? fence_id;
   DateTime? ats;
-  InfinityDateTime? atf;
+  DateTime? atf;
   bool cancelled;
-  DateTime? minEts;
-  DateTime? maxEtf;
-  List<Estimate> estimates;
+  List<Drafting>? draftings;
+  List<Mooring>? moorings;
 
   Stage({
     required this.stage_id,
@@ -354,24 +764,22 @@ class Stage {
     this.ats,
     this.atf,
     required this.cancelled,
-    this.minEts,
-    this.maxEtf,
-    required this.estimates,
+    this.draftings,
+    this.moorings,
   });
 
   Stage copyWith({
-    num? stage_id,
+    int? stage_id,
     String? tstamp,
-    num? voyage_id,
-    num? stagetype_id,
-    num? sequential,
-    num? fence_id,
+    int? voyage_id,
+    int? stagetype_id,
+    int? sequential,
+    int? fence_id,
     DateTime? ats,
-    InfinityDateTime? atf,
+    DateTime? atf,
     bool? cancelled,
-    DateTime? minEts,
-    DateTime? maxEtf,
-    List<Estimate>? estimates,
+    List<Drafting>? draftings,
+    List<Mooring>? moorings,
   }) {
     return Stage(
       stage_id: stage_id ?? this.stage_id,
@@ -383,66 +791,59 @@ class Stage {
       ats: ats ?? this.ats,
       atf: atf ?? this.atf,
       cancelled: cancelled ?? this.cancelled,
-      minEts: minEts ?? this.minEts,
-      maxEtf: maxEtf ?? this.maxEtf,
-      estimates: estimates ?? this.estimates,
+      draftings: draftings ?? this.draftings,
+      moorings: moorings ?? this.moorings,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'stage_id': stage_id,
       'tstamp': tstamp,
       'voyage_id': voyage_id,
       'stagetype_id': stagetype_id,
       'sequential': sequential,
       'fence_id': fence_id,
-      'ats': ats?.toIso8601String(),
-      'atf': atf?.getParse(),
+      'ats': ats?.millisecondsSinceEpoch,
+      'atf': atf?.millisecondsSinceEpoch,
       'cancelled': cancelled,
-      'minEts': minEts?.toIso8601String(),
-      'maxEtf': maxEtf?.toIso8601String(),
-      'estimates': estimates.map((x) => x.toMap()).toList(),
+      'draftings': draftings?.map((x) => x.toMap()).toList(),
+      'moorings': moorings?.map((x) => x.toMap()).toList(),
     };
   }
 
   factory Stage.fromMap(Map<String, dynamic> map) {
     return Stage(
-      stage_id: map['stage_id'] as num,
-      tstamp: map['tstamp'] as String,
-      voyage_id: map['voyage_id'] as num,
-      stagetype_id: map['stagetype_id'] as num,
-      sequential: map['sequential'] as num,
-      fence_id: map['fence_id'] != null ? map['fence_id'] as num : null,
+      stage_id: map['stage_id']?.toInt() ?? 0,
+      tstamp: map['tstamp'] ?? '',
+      voyage_id: map['voyage_id']?.toInt() ?? 0,
+      stagetype_id: map['stagetype_id']?.toInt() ?? 0,
+      sequential: map['sequential']?.toInt() ?? 0,
+      fence_id: map['fence_id']?.toInt(),
       ats: map['ats'] != null ? DateTime.parse(map['ats']) : null,
-      atf: map['atf'] != null ? InfinityDateTime(map['atf']) : null,
-      cancelled: map['cancelled'] as bool,
-      minEts: map['minEts'] != null ? DateTime.parse(map['minEts']) : null,
-      maxEtf: map['maxEtf'] != null ? DateTime.parse(map['maxEtf']) : null,
-      estimates: List<Estimate>.from(
-        (map['estimates'] as List).map<Estimate>(
-          (x) => Estimate.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
+      atf: map['atf'] != null ? DateTime.parse(map['atf']) : null,
+      cancelled: map['cancelled'] ?? false,
+      draftings:
+          map['draftings'] != null ? List<Drafting>.from(map['draftings']?.map((x) => Drafting.fromMap(x))) : null,
+      moorings: map['moorings'] != null ? List<Mooring>.from(map['moorings']?.map((x) => Mooring.fromMap(x))) : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory Stage.fromJson(String source) =>
-      Stage.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Stage.fromJson(String source) => Stage.fromMap(json.decode(source));
 
   @override
   String toString() {
-    return 'Stage(stage_id: $stage_id, tstamp: $tstamp, voyage_id: $voyage_id, stagetype_id: $stagetype_id, sequential: $sequential, fence_id: $fence_id, ats: $ats, atf: $atf, cancelled: $cancelled, minEts: $minEts, maxEtf: $maxEtf, estimates: $estimates)';
+    return 'Stage(stage_id: $stage_id, tstamp: $tstamp, voyage_id: $voyage_id, stagetype_id: $stagetype_id, sequential: $sequential, fence_id: $fence_id, ats: $ats, atf: $atf, cancelled: $cancelled, draftings: $draftings, moorings: $moorings)';
   }
 
   @override
-  bool operator ==(covariant Stage other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    final listEquals = const DeepCollectionEquality().equals;
 
-    return other.stage_id == stage_id &&
+    return other is Stage &&
+        other.stage_id == stage_id &&
         other.tstamp == tstamp &&
         other.voyage_id == voyage_id &&
         other.stagetype_id == stagetype_id &&
@@ -451,9 +852,8 @@ class Stage {
         other.ats == ats &&
         other.atf == atf &&
         other.cancelled == cancelled &&
-        other.minEts == minEts &&
-        other.maxEtf == maxEtf &&
-        listEquals(other.estimates, estimates);
+        listEquals(other.draftings, draftings) &&
+        listEquals(other.moorings, moorings);
   }
 
   @override
@@ -467,18 +867,17 @@ class Stage {
         ats.hashCode ^
         atf.hashCode ^
         cancelled.hashCode ^
-        minEts.hashCode ^
-        maxEtf.hashCode ^
-        estimates.hashCode;
+        draftings.hashCode ^
+        moorings.hashCode;
   }
 }
 
 class Voyage {
-  num voyage_id;
+  int voyage_id;
   String tstamp;
   String? voyage_desc;
-  num imo;
-  num duv;
+  int imo;
+  int duv;
   String last_call;
   String eta;
   String? next_call;
@@ -486,9 +885,9 @@ class Voyage {
   DateTime? min_ts;
   InfinityDateTime? max_tf;
   List<Stage> stages;
-  num? mmsi;
+  int? mmsi;
   String? vessel_name;
-  num? course_id;
+  int? course_id;
   bool? done;
   bool? curr;
   Org? agency;
@@ -515,11 +914,11 @@ class Voyage {
   });
 
   Voyage copyWith({
-    num? voyage_id,
+    int? voyage_id,
     String? tstamp,
     String? voyage_desc,
-    num? imo,
-    num? duv,
+    int? imo,
+    int? duv,
     String? last_call,
     String? eta,
     String? next_call,
@@ -527,9 +926,9 @@ class Voyage {
     DateTime? min_ts,
     InfinityDateTime? max_tf,
     List<Stage>? stages,
-    num? mmsi,
+    int? mmsi,
     String? vessel_name,
-    num? course_id,
+    int? course_id,
     bool? done,
     bool? curr,
     Org? agency,
@@ -581,12 +980,11 @@ class Voyage {
 
   factory Voyage.fromMap(Map<String, dynamic> map) {
     return Voyage(
-      voyage_id: map['voyage_id'] as num,
+      voyage_id: map['voyage_id'] as int,
       tstamp: map['tstamp'] as String,
-      voyage_desc:
-          map['voyage_desc'] != null ? map['voyage_desc'] as String : null,
-      imo: map['imo'] as num,
-      duv: map['duv'] as num,
+      voyage_desc: map['voyage_desc'] != null ? map['voyage_desc'] as String : null,
+      imo: map['imo'] as int,
+      duv: map['duv'] as int,
       last_call: map['last_call'] as String,
       eta: map['eta'] as String,
       next_call: map['next_call'] != null ? map['next_call'] as String : null,
@@ -598,22 +996,18 @@ class Voyage {
           (x) => Stage.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      mmsi: map['mmsi'] != null ? map['mmsi'] as num : null,
-      vessel_name:
-          map['vessel_name'] != null ? map['vessel_name'] as String : null,
-      course_id: map['course_id'] != null ? map['course_id'] as num : null,
+      mmsi: map['mmsi'] != null ? map['mmsi'] as int : null,
+      vessel_name: map['vessel_name'] != null ? map['vessel_name'] as String : null,
+      course_id: map['course_id'] != null ? map['course_id'] as int : null,
       done: map['done'] != null ? map['done'] as bool : null,
       curr: map['curr'] != null ? map['curr'] as bool : null,
-      agency: map['agency'] != null
-          ? Org.fromMap(map['agency'] as Map<String, dynamic>)
-          : null,
+      agency: map['agency'] != null ? Org.fromMap(map['agency'] as Map<String, dynamic>) : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory Voyage.fromJson(String source) =>
-      Voyage.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Voyage.fromJson(String source) => Voyage.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -665,5 +1059,163 @@ class Voyage {
         done.hashCode ^
         curr.hashCode ^
         agency.hashCode;
+  }
+}
+
+class Bollard {
+  int bollard_id;
+  String bollard_name;
+
+  Bollard({
+    required this.bollard_id,
+    required this.bollard_name,
+  });
+
+  Bollard copyWith({
+    int? bollard_id,
+    String? bollard_name,
+  }) {
+    return Bollard(
+      bollard_id: bollard_id ?? this.bollard_id,
+      bollard_name: bollard_name ?? this.bollard_name,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'bollard_id': bollard_id,
+      'bollard_name': bollard_name,
+    };
+  }
+
+  factory Bollard.fromMap(Map<String, dynamic> map) {
+    return Bollard(
+      bollard_id: map['bollard_id']?.toInt() ?? 0,
+      bollard_name: map['bollard_name'] ?? '',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Bollard.fromJson(String source) => Bollard.fromMap(json.decode(source));
+
+  @override
+  String toString() => 'Bollard(bollard_id: $bollard_id, bollard_name: $bollard_name)';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Bollard && other.bollard_id == bollard_id && other.bollard_name == bollard_name;
+  }
+
+  @override
+  int get hashCode => bollard_id.hashCode ^ bollard_name.hashCode;
+}
+
+class Berth {
+  int berth_id;
+  String berth_name;
+  String berth_desc;
+  String berth_code;
+  String berth_pier;
+  String port_code;
+  int fence_id;
+  List<Bollard> bollards;
+
+  Berth({
+    required this.berth_id,
+    required this.berth_name,
+    required this.berth_desc,
+    required this.berth_code,
+    required this.berth_pier,
+    required this.port_code,
+    required this.fence_id,
+    required this.bollards,
+  });
+
+  Berth copyWith({
+    int? berth_id,
+    String? berth_name,
+    String? berth_desc,
+    String? berth_code,
+    String? berth_pier,
+    String? port_code,
+    int? fence_id,
+    List<Bollard>? bollards,
+  }) {
+    return Berth(
+      berth_id: berth_id ?? this.berth_id,
+      berth_name: berth_name ?? this.berth_name,
+      berth_desc: berth_desc ?? this.berth_desc,
+      berth_code: berth_code ?? this.berth_code,
+      berth_pier: berth_pier ?? this.berth_pier,
+      port_code: port_code ?? this.port_code,
+      fence_id: fence_id ?? this.fence_id,
+      bollards: bollards ?? this.bollards,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'berth_id': berth_id,
+      'berth_name': berth_name,
+      'berth_desc': berth_desc,
+      'berth_code': berth_code,
+      'berth_pier': berth_pier,
+      'port_code': port_code,
+      'fence_id': fence_id,
+      'bollards': bollards.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory Berth.fromMap(Map<String, dynamic> map) {
+    return Berth(
+      berth_id: map['berth_id']?.toInt() ?? 0,
+      berth_name: map['berth_name'] ?? '',
+      berth_desc: map['berth_desc'] ?? '',
+      berth_code: map['berth_code'] ?? '',
+      berth_pier: map['berth_pier'] ?? '',
+      port_code: map['port_code'] ?? '',
+      fence_id: map['fence_id']?.toInt() ?? 0,
+      bollards: List<Bollard>.from(map['bollards']?.map((x) => Bollard.fromMap(x))),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Berth.fromJson(String source) => Berth.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'Berth(berth_id: $berth_id, berth_name: $berth_name, berth_desc: $berth_desc, berth_code: $berth_code, berth_pier: $berth_pier, port_code: $port_code, fence_id: $fence_id, bollards: $bollards)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    final listEquals = const DeepCollectionEquality().equals;
+
+    return other is Berth &&
+        other.berth_id == berth_id &&
+        other.berth_name == berth_name &&
+        other.berth_desc == berth_desc &&
+        other.berth_code == berth_code &&
+        other.berth_pier == berth_pier &&
+        other.port_code == port_code &&
+        other.fence_id == fence_id &&
+        listEquals(other.bollards, bollards);
+  }
+
+  @override
+  int get hashCode {
+    return berth_id.hashCode ^
+        berth_name.hashCode ^
+        berth_desc.hashCode ^
+        berth_code.hashCode ^
+        berth_pier.hashCode ^
+        port_code.hashCode ^
+        fence_id.hashCode ^
+        bollards.hashCode;
   }
 }

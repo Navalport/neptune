@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mooringapp/voyages.dart';
 import 'package:mooringapp/login.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
@@ -69,7 +68,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginWidget(), //DockingsWidget
+      home: const LoginWidget(),
     );
   }
 

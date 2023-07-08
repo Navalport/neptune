@@ -6,11 +6,11 @@ import 'package:mooringapp/interfaces.dart';
 import 'package:mooringapp/types.dart';
 
 class MooringWidget extends StatefulWidget {
-  final Berth berthing;
-  final List<dynamic> hawsers, bollards;
+  final Stage stage;
+  final List<Hawser> hawsers;
+  final List<Bollard> bollards;
 
-  const MooringWidget({Key? key, required this.berthing, required this.hawsers, required this.bollards})
-      : super(key: key);
+  const MooringWidget({Key? key, required this.stage, required this.hawsers, required this.bollards}) : super(key: key);
 
   @override
   State<MooringWidget> createState() => _MooringWidgetState();
@@ -18,7 +18,8 @@ class MooringWidget extends StatefulWidget {
 
 class _MooringWidgetState extends State<MooringWidget> {
   DateTime? _firstTieDateTime, _lastTieDateTime, _firstUntieDateTime, _lastUntieDateTime;
-  dynamic _firstTieTether, _lastTieTether, _firstUntieTether, _lastUntieTether, _bowTether, _sternTether, _mooring;
+  Tether? _firstTieTether, _lastTieTether, _firstUntieTether, _lastUntieTether, _bowTether, _sternTether;
+  Mooring? _mooring;
   final _bowController = TextEditingController();
   final _sternController = TextEditingController();
   final _tieFirstController = TextEditingController();
@@ -33,7 +34,7 @@ class _MooringWidgetState extends State<MooringWidget> {
   final _lock5 = TextEditingController();
   final List<bool> _inProgress = List.filled(6, false);
   final List<bool> _isSet = List.filled(6, false);
-  VoyageBehaviorSubject voyage$ = VoyageBehaviorSubject();
+  StageBehaviorSubject stage$ = StageBehaviorSubject();
 
   @override
   void dispose() {
@@ -55,14 +56,14 @@ class _MooringWidgetState extends State<MooringWidget> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: voyage$.getStream(),
-      builder: (context, snapshot) {
+      stream: stage$.getStream(),
+      builder: (context, AsyncSnapshot<Stage?> snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        dynamic voyage = snapshot.data;
-        _populateMoorings(voyage);
+        Stage stage = snapshot.data!;
+        _populateMoorings(stage);
 
         return LayoutBuilder(
           builder: (BuildContext context, BoxConstraints viewportConstraints) {
@@ -86,23 +87,24 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[0]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _firstTieTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _firstTieTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Primeiro Cabo",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"],
-                                          child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id,
+                                          child: Text(
+                                              "${getHawser(e.hawser_id).hawser_desc} / ${getBollard(e.bollard_id).bollard_name}")))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
                                       _firstTieTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                          _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -160,11 +162,18 @@ class _MooringWidgetState extends State<MooringWidget> {
                                           _inProgress[0] = true;
                                         });
                                         await DockingsInterface.bindTether(
-                                            _mooring["mooring_id"],
-                                            _firstTieTether["tether_id"],
-                                            {"tie_started_at": _firstTieDateTime!.toIso8601String()},
-                                            {"first_tie": true});
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                          _mooring!.mooring_id,
+                                          _firstTieTether!.tether_id,
+                                          {
+                                            ..._mooring!.toMap(),
+                                            "tie_started_at": _firstTieDateTime!.toIso8601String(),
+                                          },
+                                          {
+                                            ..._firstTieTether!.toMap(),
+                                            "first_tie": true,
+                                          },
+                                        );
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[0] = false;
                                         });
@@ -179,23 +188,24 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[1]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _lastTieTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _lastTieTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Último Cabo",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"],
-                                          child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id,
+                                          child: Text(
+                                              "${getHawser(e.hawser_id).hawser_desc} / ${getBollard(e.bollard_id).bollard_name}")))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
                                       _lastTieTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                          _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -253,11 +263,18 @@ class _MooringWidgetState extends State<MooringWidget> {
                                           _inProgress[1] = true;
                                         });
                                         await DockingsInterface.bindTether(
-                                            _mooring["mooring_id"],
-                                            _lastTieTether["tether_id"],
-                                            {"tie_finished_at": _lastTieDateTime!.toIso8601String()},
-                                            {"last_tie": true});
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                          _mooring!.mooring_id,
+                                          _lastTieTether!.tether_id,
+                                          {
+                                            ..._mooring!.toMap(),
+                                            "tie_finished_at": _lastTieDateTime!.toIso8601String(),
+                                          },
+                                          {
+                                            ..._lastTieTether!.toMap(),
+                                            "last_tie": true,
+                                          },
+                                        );
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[1] = false;
                                         });
@@ -282,23 +299,22 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[2]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _bowTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _bowTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Cabeço",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .where((e) => e["pristine"] == true)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"], child: Text(e['bollard_name'])))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .where((e) => e.pristine == true)
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id, child: Text(getBollard(e.bollard_id).bollard_name)))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
-                                      _bowTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                      _bowTether = _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -339,11 +355,11 @@ class _MooringWidgetState extends State<MooringWidget> {
                                         setState(() {
                                           _inProgress[2] = true;
                                         });
-                                        await DockingsInterface.patchTether(
-                                            _mooring["mooring_id"],
-                                            _bowTether["tether_id"],
-                                            {"bow_distance": double.parse(_bowController.text)});
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                        await DockingsInterface.patchTether(_bowTether!.tether_id, {
+                                          ..._bowTether!.toMap(),
+                                          "bow_distance": double.parse(_bowController.text),
+                                        });
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[2] = false;
                                         });
@@ -358,23 +374,23 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[3]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _sternTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _sternTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Cabeço",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .where((e) => e["pristine"] == true)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"], child: Text(e['bollard_name'])))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .where((e) => e.pristine == true)
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id, child: Text(getBollard(e.bollard_id).bollard_name)))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
                                       _sternTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                          _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -415,11 +431,11 @@ class _MooringWidgetState extends State<MooringWidget> {
                                         setState(() {
                                           _inProgress[3] = true;
                                         });
-                                        await DockingsInterface.patchTether(
-                                            _mooring["mooring_id"], _sternTether["tether_id"], {
+                                        await DockingsInterface.patchTether(_sternTether!.tether_id, {
+                                          ..._sternTether!.toMap(),
                                           "stern_distance": double.parse(_sternController.text),
                                         });
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[3] = false;
                                         });
@@ -444,23 +460,24 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[4]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _firstUntieTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _firstUntieTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Primeiro Cabo",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"],
-                                          child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id,
+                                          child: Text(
+                                              "${getHawser(e.hawser_id).hawser_desc} / ${getBollard(e.bollard_id).bollard_name}")))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
                                       _firstUntieTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                          _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -518,11 +535,19 @@ class _MooringWidgetState extends State<MooringWidget> {
                                           _inProgress[4] = true;
                                         });
                                         await DockingsInterface.bindTether(
-                                            _mooring["mooring_id"],
-                                            _firstUntieTether["tether_id"],
-                                            {"untie_started_at": _firstUntieDateTime!.toIso8601String()},
-                                            {"first_untie": true, "pristine": false});
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                          _mooring!.mooring_id,
+                                          _firstUntieTether!.tether_id,
+                                          {
+                                            ..._mooring!.toMap(),
+                                            "untie_started_at": _firstUntieDateTime!.toIso8601String(),
+                                          },
+                                          {
+                                            ..._firstUntieTether!.toMap(),
+                                            "first_untie": true,
+                                            "pristine": null,
+                                          },
+                                        );
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[4] = false;
                                         });
@@ -537,23 +562,24 @@ class _MooringWidgetState extends State<MooringWidget> {
                         Flexible(
                           flex: 1,
                           child: !_isSet[5]
-                              ? DropdownButtonFormField<dynamic>(
-                                  value: _lastUntieTether?["tether_id"],
+                              ? DropdownButtonFormField(
+                                  value: _lastUntieTether?.tether_id,
                                   validator: (value) => value == null ? 'Requerido' : null,
                                   dropdownColor: const Color(0xFF292B2F),
                                   decoration: const InputDecoration(
                                     labelText: "Último Cabo",
                                     contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                   ),
-                                  items: ((_mooring?["tethers"] ?? []) as List<dynamic>)
-                                      .map((e) => DropdownMenuItem<dynamic>(
-                                          value: e["tether_id"],
-                                          child: Text("${e["hawser_desc"]} / ${e['bollard_name']}")))
+                                  items: ((_mooring?.tethers ?? []))
+                                      .map((e) => DropdownMenuItem(
+                                          value: e.tether_id,
+                                          child: Text(
+                                              "${getHawser(e.hawser_id).hawser_desc} / ${getBollard(e.bollard_id).bollard_name}")))
                                       .toList(),
-                                  onChanged: (dynamic val) {
+                                  onChanged: (int? val) {
                                     setState(() {
                                       _lastUntieTether =
-                                          _mooring?["tethers"].firstWhere((element) => element["tether_id"] == val);
+                                          _mooring?.tethers.firstWhere((element) => element.tether_id == val);
                                     });
                                   },
                                 )
@@ -612,21 +638,33 @@ class _MooringWidgetState extends State<MooringWidget> {
                                         });
                                         List<Future<dynamic>> futures = [];
                                         futures.add(DockingsInterface.bindTether(
-                                            _mooring["mooring_id"],
-                                            _lastUntieTether["tether_id"],
-                                            {"untie_finished_at": _lastUntieDateTime!.toIso8601String()},
-                                            {"last_untie": true, "pristine": null}));
+                                          _mooring!.mooring_id,
+                                          _lastUntieTether!.tether_id,
+                                          {
+                                            ..._mooring!.toMap(),
+                                            "untie_finished_at": _lastUntieDateTime!.toIso8601String(),
+                                          },
+                                          {
+                                            ..._lastUntieTether!.toMap(),
+                                            "last_untie": true,
+                                            "pristine": null,
+                                          },
+                                        ));
 
                                         //unties remaning tethers
-                                        _mooring?["tethers"]
+                                        _mooring?.tethers
                                             .where((tether) =>
-                                                tether["pristine"] == true &&
-                                                tether["tether_id"] != _lastUntieTether["tether_id"])
-                                            .forEach((tether) => futures.add(DockingsInterface.patchTether(
-                                                _mooring["mooring_id"], tether["tether_id"], {"pristine": null})));
-                                        Future.wait(futures);
+                                                tether.pristine == true &&
+                                                tether.tether_id != _lastUntieTether!.tether_id)
+                                            .forEach((tether) =>
+                                                futures.add(DockingsInterface.patchTether(tether.tether_id, {
+                                                  ...tether.toMap(),
+                                                  "pristine": null,
+                                                })));
 
-                                        await voyage$.refresh(voyage["voyage_id"]);
+                                        await Future.wait(futures);
+
+                                        await stage$.refresh(stage.stage_id);
                                         setState(() {
                                           _inProgress[5] = false;
                                         });
@@ -645,56 +683,69 @@ class _MooringWidgetState extends State<MooringWidget> {
     );
   }
 
-  void _populateMoorings(dynamic voyage) {
-    var stage = (voyage["stages"] as List).firstWhere((e) => e["stage_id"] == widget.berthing.stageId);
-    _mooring = stage['moorings']?.first;
+  void _populateMoorings(Stage stage) {
+    _mooring = (stage.moorings?.isEmpty ?? false) ? null : stage.moorings!.first;
+    List<Tether>? temp;
 
-    _firstTieTether =
-        _mooring?["tethers"].firstWhere((e) => e["first_tie"] == true, orElse: () => null) ?? _firstTieTether;
-    _isSet[0] = _firstTieTether != null && (_firstTieTether["first_tie"] == true);
+    temp = _mooring?.tethers.where((e) => e.first_tie == true).toList();
+    _firstTieTether = (temp ?? []).isEmpty ? _firstTieTether : temp?.first;
+    _isSet[0] = _firstTieTether != null && (_firstTieTether!.first_tie == true);
     if (_isSet[0]) {
-      _tieFirstController.text = _mooring["tie_started_at"];
-      _lock0.text = "${_firstTieTether["hawser_desc"]} / ${_firstTieTether['bollard_name']}";
+      _tieFirstController.text = _mooring!.tie_started_at!;
+      _lock0.text =
+          "${getHawser(_firstTieTether!.hawser_id).hawser_desc} / ${getBollard(_firstTieTether!.bollard_id).bollard_name}";
     }
 
-    _lastTieTether =
-        _mooring?["tethers"].firstWhere((e) => e["last_tie"] == true, orElse: () => null) ?? _lastTieTether;
-    _isSet[1] = _lastTieTether != null && (_lastTieTether["last_tie"] == true);
+    temp = _mooring?.tethers.where((e) => e.last_tie == true).toList();
+    _lastTieTether = (temp ?? []).isEmpty ? _lastTieTether : temp?.first;
+    _isSet[1] = _lastTieTether != null && (_lastTieTether!.last_tie == true);
     if (_isSet[1]) {
-      _tieLastController.text = _mooring["tie_finished_at"] ?? "";
-      _lock1.text = "${_lastTieTether["hawser_desc"]} / ${_lastTieTether['bollard_name']}";
+      _tieLastController.text = _mooring!.tie_finished_at ?? "";
+      _lock1.text =
+          "${getHawser(_lastTieTether!.hawser_id).hawser_desc} / ${getBollard(_lastTieTether!.bollard_id).bollard_name}";
     }
 
-    _bowTether = _mooring?["tethers"].firstWhere((e) => e["bow_distance"] != null, orElse: () => null) ?? _bowTether;
-    _isSet[2] = _bowTether != null && _bowTether["bow_distance"] != null;
+    temp = _mooring?.tethers.where((e) => e.bow_distance != null).toList();
+    _bowTether = (temp ?? []).isEmpty ? _bowTether : temp?.first;
+    _isSet[2] = _bowTether != null && _bowTether!.bow_distance != null;
     if (_isSet[2]) {
-      _bowController.text = _bowTether["bow_distance"].toString();
-      _lock2.text = _bowTether['bollard_name'];
+      _bowController.text = _bowTether!.bow_distance.toString();
+      _lock2.text = getBollard(_bowTether!.bollard_id).bollard_name;
     }
 
-    _sternTether =
-        _mooring?["tethers"].firstWhere((e) => e["stern_distance"] != null, orElse: () => null) ?? _sternTether;
-    _isSet[3] = _sternTether != null && _sternTether["stern_distance"] != null;
+    temp = _mooring?.tethers.where((e) => e.stern_distance != null).toList();
+    _sternTether = (temp ?? []).isEmpty ? _sternTether : temp?.first;
+    _isSet[3] = _sternTether != null && _sternTether!.stern_distance != null;
     if (_isSet[3]) {
-      _sternController.text = _sternTether["stern_distance"].toString();
-      _lock3.text = _sternTether['bollard_name'];
+      _sternController.text = _sternTether!.stern_distance.toString();
+      _lock3.text = getBollard(_sternTether!.bollard_id).bollard_name;
     }
 
-    _firstUntieTether =
-        _mooring?["tethers"].firstWhere((e) => e["first_untie"] == true, orElse: () => null) ?? _firstUntieTether;
-    _isSet[4] = _firstUntieTether != null && (_firstUntieTether["first_untie"] == true);
+    temp = _mooring?.tethers.where((e) => e.first_untie == true).toList();
+    _firstUntieTether = (temp ?? []).isEmpty ? _firstUntieTether : temp?.first;
+    _isSet[4] = _firstUntieTether != null && (_firstUntieTether!.first_untie == true);
     if (_isSet[4]) {
-      _untieFirstController.text = _mooring["untie_started_at"] ?? "";
-      _lock4.text = "${_firstUntieTether["hawser_desc"]} / ${_firstUntieTether['bollard_name']}";
+      _untieFirstController.text = _mooring!.untie_started_at ?? "";
+      _lock4.text =
+          "${getHawser(_firstUntieTether!.hawser_id).hawser_desc} / ${getBollard(_firstUntieTether!.bollard_id).bollard_name}";
     }
 
-    _lastUntieTether =
-        _mooring?["tethers"].firstWhere((e) => e["last_untie"] == true, orElse: () => null) ?? _lastUntieTether;
-    _isSet[5] = _lastUntieTether != null && (_lastUntieTether["last_untie"] == true);
+    temp = _mooring?.tethers.where((e) => e.last_untie == true).toList();
+    _lastUntieTether = (temp ?? []).isEmpty ? _lastUntieTether : temp?.first;
+    _isSet[5] = _lastUntieTether != null && (_lastUntieTether!.last_untie == true);
     if (_isSet[5]) {
-      _untieLastController.text = _mooring["untie_finished_at"] ?? "";
-      _lock5.text = "${_lastUntieTether["hawser_desc"]} / ${_lastUntieTether['bollard_name']}";
+      _untieLastController.text = _mooring!.untie_finished_at ?? "";
+      _lock5.text =
+          "${getHawser(_lastUntieTether!.hawser_id).hawser_desc} / ${getBollard(_lastUntieTether!.bollard_id).bollard_name}";
     }
+  }
+
+  Hawser getHawser(int id) {
+    return widget.hawsers.firstWhere((hawser) => hawser.hawser_id == id);
+  }
+
+  Bollard getBollard(int id) {
+    return widget.bollards.firstWhere((bollard) => bollard.bollard_id == id);
   }
 }
 
