@@ -80,60 +80,92 @@ class _BerthsWidgetState extends State<BerthsWidget> {
                           child: Text("Sem estágios de atracação"),
                         ),
                       )
-                    : ListView.builder(
-                        itemCount: stageWithBerths.length,
-                        itemBuilder: (context, index) {
-                          final stageWithBerth = stageWithBerths[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Card(
-                              child: InkWell(
-                                onTap: () {
-                                  if (stageWithBerth.item2 == null) {
-                                    showDialog(
-                                        context: context,
-                                        builder: (context) => fillStageIdDialog(context, stageWithBerth.item1));
-                                  } else {
-                                    Navigator.of(context).push(MaterialPageRoute(
-                                        builder: (context) => BerthWidget(
-                                              voyage: voyage,
-                                              stage: stageWithBerth.item1,
-                                              berth: stageWithBerth.item2!,
-                                            )));
-                                  }
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                    : Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(voyage.vessel_name ?? "Embarcação sem nome"),
+                                const SizedBox(height: 4),
+                                Text(voyage.voyage_desc ?? "N/D"),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("IMO: ${voyage.imo}"),
+                                const SizedBox(height: 4),
+                                Text("DUV: ${voyage.duv}"),
+                              ],
+                            ),
+                          ),
+                          const Divider(
+                            height: 1,
+                            color: Colors.white,
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: stageWithBerths.length,
+                              itemBuilder: (context, index) {
+                                final stageWithBerth = stageWithBerths[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Card(
+                                    child: InkWell(
+                                      onTap: () {
+                                        if (stageWithBerth.item2 == null) {
+                                          showDialog(
+                                              context: context,
+                                              builder: (context) => fillStageIdDialog(context, stageWithBerth.item1));
+                                        } else {
+                                          Navigator.of(context).push(MaterialPageRoute(
+                                              builder: (context) => BerthWidget(
+                                                    voyage: voyage,
+                                                    stage: stageWithBerth.item1,
+                                                    berth: stageWithBerth.item2!,
+                                                  )));
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(stageWithBerth.item2?.berth_name ?? "Berço indefinido"),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text("ATS: ${stageWithBerth.item1.ats ?? "N/A"}"),
-                                                const SizedBox(height: 4),
-                                                Text("ATF: ${stageWithBerth.item1.atf ?? "N/A"}"),
-                                              ],
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(stageWithBerth.item2?.berth_name ?? "Berço indefinido"),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text("ATS: ${stageWithBerth.item1.ats ?? "N/A"}"),
+                                                      const SizedBox(height: 4),
+                                                      Text("ATF: ${stageWithBerth.item1.atf ?? "N/A"}"),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const Padding(
+                                              padding: EdgeInsets.all(10),
+                                              child: Icon(Icons.chevron_right),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const Padding(
-                                        padding: EdgeInsets.all(10),
-                                        child: Icon(Icons.chevron_right),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       );
               },
             );
@@ -214,8 +246,8 @@ class _BerthsWidgetState extends State<BerthsWidget> {
                             } else {
                               await VoyageInterface.patchStage(stage.stage_id, {
                                 "fence_id": fenceId,
-                                "ats": stage.ats,
-                                "atf": stage.atf,
+                                "ats": stage.ats?.toIso8601String(),
+                                "atf": stage.atf?.toIso8601String(),
                                 "cancelled": stage.cancelled,
                               });
                             }
