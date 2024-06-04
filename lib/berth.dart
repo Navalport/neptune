@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mooringapp/defaultAppBar.dart';
 import 'package:mooringapp/interfaces.dart';
-import 'package:mooringapp/messages.dart';
 import 'package:mooringapp/tethers.dart';
 import 'package:mooringapp/drafting.dart';
 import 'package:mooringapp/mooring.dart';

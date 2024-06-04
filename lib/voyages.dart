@@ -13,7 +13,7 @@ class DockingsWidget extends StatefulWidget {
   State<DockingsWidget> createState() => _DockingsWidgetState();
 }
 
-class _DockingsWidgetState extends State<DockingsWidget> {
+class _DockingsWidgetState extends State<DockingsWidget> with TickerProviderStateMixin {
   final VoyagesBehaviorSubject _voyages$ = VoyagesBehaviorSubject();
   final _searchBarController = TextEditingController();
 
@@ -31,6 +31,8 @@ class _DockingsWidgetState extends State<DockingsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    TabController tabController = TabController(length: 2, vsync: this);
+
     return Scaffold(
       appBar: DefaultAppBar(),
       body: Column(
@@ -42,7 +44,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
               children: [
                 Text(
                   "Porto de Santos",
-                  style: Theme.of(context).textTheme.bodyText1,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 IconButton(
                     onPressed: () async {
@@ -56,8 +58,6 @@ class _DockingsWidgetState extends State<DockingsWidget> {
               ],
             ),
           ),
-          // Image.asset('assets/static_map.png'),
-          // const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: TextField(
@@ -65,14 +65,35 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                 setState(() {});
               },
               controller: _searchBarController,
+              cursorColor: const Color(0xFFE4F8EF),
               decoration: InputDecoration(
                   labelText: "Buscar",
                   suffixIcon: const Icon(Icons.search),
                   suffixIconColor: const Color(0xFFE4F8EF),
-                  suffixStyle: Theme.of(context).textTheme.bodyText2),
+                  suffixStyle: Theme.of(context).textTheme.bodyMedium),
             ),
           ),
           const SizedBox(height: 4),
+          DefaultTabController(
+            length: 2,
+            child: TabBar(
+              controller: tabController,
+              tabs: const [
+                Tab(
+                  child: Text(
+                    "Sem amarrações\nabertas",
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Tab(
+                  child: Text(
+                    "Com amarrações\nabertas",
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder(
               stream: _voyages$.getStream(),
@@ -80,31 +101,7 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                // if (snapshot.connectionState != ConnectionState.done) {
-                //   return const Center(
-                //     child: CircularProgressIndicator(),
-                //   );
-                // }
-                // if (snapshot.hasError) {
-                //   return Center(
-                //     child: IntrinsicHeight(
-                //       child: Column(
-                //         children: [
-                //           Text(snapshot.error.toString()),
-                //           IconButton(
-                //               onPressed: () async {
-                //                 await _voyages$.refresh();
-                //                 setState(() {});
-                //               },
-                //               icon: const Icon(Icons.refresh))
-                //         ],
-                //       ),
-                //     ),
-                //   );
-                // }
-                // else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                 final voyages = snapshot.data!;
-                print(voyages.length);
 
                 var filteredVoyages = voyages
                     .where((e) =>
@@ -117,98 +114,83 @@ class _DockingsWidgetState extends State<DockingsWidget> {
                 return RefreshIndicator(
                   onRefresh: () async {
                     return await _voyages$.refresh();
-                    // return _voyages$.onError((_, __) {
-                    //   setState(() {});
-                    //   return [];
-                    // }).then((_) => setState(() {}));
                   },
-                  child: ListView.builder(
-                    itemCount: filteredVoyages.length,
-                    itemBuilder: (context, index) {
-                      final voyage = filteredVoyages[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        child: Card(
-                          child: InkWell(
-                            // onTap: () {
-                            //   var berthStages = voyage.stages.where((e) => e.stagetype_id == 4);
-                            //   if (berthStages.isNotEmpty) {
-                            //     int? fenceId = berthStages.first.fence_id;
-                            //     if (fenceId != null) {
-                            //       BerthInterface.getBerthByFenceId(fenceId).then((value) => print(value));
-                            //     }
-                            //   }
-                            // },
-                            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => BerthsWidget(
-                                      voyage: voyage,
-                                      // voyageId: voyage.voyage_id,
-                                      // stages: voyage.stages.where((e) => e.stagetype_id == 4).toList(),
-                                    ))),
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(voyage.vessel_name ?? "Embarcação sem nome"),
-                                            const SizedBox(height: 4),
-                                            Text(voyage.voyage_desc ?? "N/D"),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text("IMO: ${voyage.imo}"),
-                                            const SizedBox(height: 4),
-                                            Text("DUV: ${voyage.duv}"),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: Icon(Icons.chevron_right),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                  child: TabBarView(
+                    controller: tabController,
+                    children: [
+                      VoyagesList(
+                          voyages: filteredVoyages.where((voyage) => !(voyage.hasOpenMoorings ?? false)).toList()),
+                      VoyagesList(
+                          voyages: filteredVoyages.where((voyage) => (voyage.hasOpenMoorings ?? false)).toList()),
+                    ],
                   ),
                 );
-                // }
-                // else {
-                //   return Center(
-                //     child: IntrinsicHeight(
-                //       child: Column(
-                //         children: [
-                //           const Text("Sem dados"),
-                //           IconButton(
-                //               onPressed: () async {
-                //                 await _voyages$.refresh();
-                //                 setState(() {});
-                //               },
-                //               icon: const Icon(Icons.refresh))
-                //         ],
-                //       ),
-                //     ),
-                //   );
-                // }
               },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class VoyagesList extends StatelessWidget {
+  final List<Voyage> voyages;
+  const VoyagesList({super.key, required this.voyages});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: voyages.length,
+      itemBuilder: (context, index) {
+        final voyage = voyages[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Card(
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => BerthsWidget(
+                        voyage: voyage,
+                      ))),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(voyage.vessel_name ?? "Embarcação sem nome"),
+                              const SizedBox(height: 4),
+                              Text(voyage.voyage_desc ?? "N/D"),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("IMO: ${voyage.imo}"),
+                              const SizedBox(height: 4),
+                              Text("DUV: ${voyage.duv}"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(Icons.chevron_right),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

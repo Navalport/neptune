@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:mooringapp/interfaces.dart';
 import 'package:mooringapp/types.dart';
 
@@ -333,8 +333,11 @@ class _MooringWidgetState extends State<MooringWidget> {
                           child: TextField(
                             enabled: !_isSet[2],
                             controller: _bowController,
+                            cursorColor: const Color(0xFFE4F8EF),
                             decoration: InputDecoration(
-                                labelText: "Proa", suffixText: "m", suffixStyle: Theme.of(context).textTheme.bodyText2),
+                                labelText: "Proa",
+                                suffixText: "m",
+                                suffixStyle: Theme.of(context).textTheme.bodyMedium),
                             keyboardType: TextInputType.number,
                             onChanged: (value) {
                               setState(() {});
@@ -409,8 +412,11 @@ class _MooringWidgetState extends State<MooringWidget> {
                           child: TextField(
                             enabled: !_isSet[3],
                             controller: _sternController,
+                            cursorColor: const Color(0xFFE4F8EF),
                             decoration: InputDecoration(
-                                labelText: "Popa", suffixText: "m", suffixStyle: Theme.of(context).textTheme.bodyText2),
+                                labelText: "Popa",
+                                suffixText: "m",
+                                suffixStyle: Theme.of(context).textTheme.bodyMedium),
                             keyboardType: TextInputType.number,
                             onChanged: (value) {
                               setState(() {});

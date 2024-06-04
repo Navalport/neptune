@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:mooringapp/interfaces.dart';
@@ -216,10 +216,11 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                               flex: 1,
                               child: TextField(
                                 controller: _draftController,
+                                cursorColor: const Color(0xFFE4F8EF),
                                 decoration: InputDecoration(
                                     labelText: "Calado",
                                     suffixText: "m",
-                                    suffixStyle: Theme.of(context).textTheme.bodyText2),
+                                    suffixStyle: Theme.of(context).textTheme.bodyMedium),
                                 keyboardType: TextInputType.number,
                                 onChanged: (value) {
                                   setState(() {});
@@ -231,6 +232,7 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                               flex: 2,
                               child: TextField(
                                 controller: _dateTimeController,
+                                cursorColor: const Color(0xFFE4F8EF),
                                 decoration: const InputDecoration(labelText: "Data"),
                                 keyboardType: TextInputType.datetime,
                                 readOnly: true,
@@ -281,9 +283,9 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
                                         });
                                       })
                                     : null,
-                                child: Row(
+                                child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [Text("Salvar")],
+                                  children: [Text("Salvar")],
                                 ),
                               ),
                         const SizedBox(height: 8),
@@ -446,18 +448,18 @@ class _DrafitingWidgetState extends State<DrafitingWidget> {
         return AlertDialog(
           title: Text(
             'Confirmar deleção',
-            style: Theme.of(context).textTheme.bodyText1,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
           // content: Text(error),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancelar', style: Theme.of(context).textTheme.bodyText1),
+              child: Text('Cancelar', style: Theme.of(context).textTheme.bodyLarge),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Sim', style: Theme.of(context).textTheme.bodyText1),
+              child: Text('Sim', style: Theme.of(context).textTheme.bodyLarge),
               onPressed: () async {
                 Navigator.of(context).pop();
                 setState(() {

@@ -59,7 +59,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF38D36)),
                                 child: Text(
                                   "Login",
-                                  style: Theme.of(context).textTheme.headline5,
+                                  style: Theme.of(context).textTheme.headlineSmall,
                                 ),
                               ),
                               const Text("Ocorreu um erro ao fazer o login. Tente novamente."),
@@ -79,7 +79,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF38D36)),
                           child: Text(
                             "Login",
-                            style: Theme.of(context).textTheme.headline5,
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         ),
                         const Text("Ocorreu um erro ao fazer o login. Tente novamente."),

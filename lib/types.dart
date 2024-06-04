@@ -891,6 +891,7 @@ class Voyage {
   bool? done;
   bool? curr;
   Org? agency;
+  bool? hasOpenMoorings; //internal use only
 
   Voyage({
     required this.voyage_id,
@@ -911,6 +912,7 @@ class Voyage {
     this.done,
     this.curr,
     this.agency,
+    this.hasOpenMoorings,
   });
 
   Voyage copyWith({
@@ -932,6 +934,7 @@ class Voyage {
     bool? done,
     bool? curr,
     Org? agency,
+    bool? hasOpenMoorings,
   }) {
     return Voyage(
       voyage_id: voyage_id ?? this.voyage_id,
@@ -952,6 +955,7 @@ class Voyage {
       done: done ?? this.done,
       curr: curr ?? this.curr,
       agency: agency ?? this.agency,
+      hasOpenMoorings: hasOpenMoorings ?? this.hasOpenMoorings,
     );
   }
 
@@ -1002,6 +1006,7 @@ class Voyage {
       done: map['done'] != null ? map['done'] as bool : null,
       curr: map['curr'] != null ? map['curr'] as bool : null,
       agency: map['agency'] != null ? Org.fromMap(map['agency'] as Map<String, dynamic>) : null,
+      hasOpenMoorings: map['hasOpenMoorings'] != null ? map['hasOpenMoorings'] as bool : null,
     );
   }
 
@@ -1011,7 +1016,7 @@ class Voyage {
 
   @override
   String toString() {
-    return 'Voyage(voyage_id: $voyage_id, tstamp: $tstamp, voyage_desc: $voyage_desc, imo: $imo, duv: $duv, last_call: $last_call, eta: $eta, next_call: $next_call, etd: $etd, min_ts: $min_ts, max_tf: $max_tf, stages: $stages, mmsi: $mmsi, vessel_name: $vessel_name, course_id: $course_id, done: $done, curr: $curr, agency: $agency)';
+    return 'Voyage(voyage_id: $voyage_id, tstamp: $tstamp, voyage_desc: $voyage_desc, imo: $imo, duv: $duv, last_call: $last_call, eta: $eta, next_call: $next_call, etd: $etd, min_ts: $min_ts, max_tf: $max_tf, stages: $stages, mmsi: $mmsi, vessel_name: $vessel_name, course_id: $course_id, done: $done, curr: $curr, agency: $agency, hasOpenMoorings: $hasOpenMoorings)';
   }
 
   @override
@@ -1036,7 +1041,8 @@ class Voyage {
         other.course_id == course_id &&
         other.done == done &&
         other.curr == curr &&
-        other.agency == agency;
+        other.agency == agency &&
+        other.hasOpenMoorings == hasOpenMoorings;
   }
 
   @override
@@ -1058,7 +1064,8 @@ class Voyage {
         course_id.hashCode ^
         done.hashCode ^
         curr.hashCode ^
-        agency.hashCode;
+        agency.hashCode ^
+        hasOpenMoorings.hashCode;
   }
 }
 

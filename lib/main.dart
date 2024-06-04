@@ -36,12 +36,12 @@ class MyApp extends StatelessWidget {
         iconTheme: Theme.of(context).iconTheme.copyWith(color: const Color(0xFFE4F8EF)),
         progressIndicatorTheme: Theme.of(context).progressIndicatorTheme.copyWith(color: const Color(0xFFF38D36)),
         textTheme: const TextTheme(
-          headline1: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
-          headline5: TextStyle(fontSize: 36.0),
-          headline6: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
-          bodyText1: TextStyle(fontSize: 16.0),
-          bodyText2: TextStyle(fontSize: 12.0),
-          subtitle1: TextStyle(fontSize: 12.0),
+          displayLarge: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+          headlineSmall: TextStyle(fontSize: 36.0),
+          titleLarge: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
+          bodyLarge: TextStyle(fontSize: 16.0),
+          bodyMedium: TextStyle(fontSize: 12.0),
+          titleMedium: TextStyle(fontSize: 12.0),
         ).apply(
           fontFamily: 'Inter',
           bodyColor: const Color(0xFFE4F8EF),

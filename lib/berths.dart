@@ -1,3 +1,4 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:mooringapp/interfaces.dart';
 import 'package:mooringapp/types.dart';
@@ -182,7 +183,7 @@ class _BerthsWidgetState extends State<BerthsWidget> {
   }
 
   Widget fillStageIdDialog(BuildContext context, [Stage? stage]) {
-    int? fenceId;
+    Berth? selectedBerth;
 
     return StatefulBuilder(
       builder: (context, setState) => FutureBuilder(
@@ -214,12 +215,12 @@ class _BerthsWidgetState extends State<BerthsWidget> {
             return AlertDialog(
               title: Text(
                 stage == null ? "Novo estágio de atracação" : "Editar estágio",
-                style: Theme.of(context).textTheme.headline5!.copyWith(fontSize: 24),
+                style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 24),
               ),
               actions: [
                 ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
                 ElevatedButton(
-                    onPressed: fenceId != null
+                    onPressed: selectedBerth != null
                         ? () async {
                             bool inProgress = true;
                             showDialog(
@@ -239,13 +240,13 @@ class _BerthsWidgetState extends State<BerthsWidget> {
                               await VoyageInterface.postStage({
                                 "voyage_id": widget.voyage.voyage_id,
                                 "stagetype_id": 4,
-                                "fence_id": fenceId,
+                                "fence_id": selectedBerth!.fence_id,
                                 "atf": null,
                                 "ats": null,
                               });
                             } else {
                               await VoyageInterface.patchStage(stage.stage_id, {
-                                "fence_id": fenceId,
+                                "fence_id": selectedBerth!.fence_id,
                                 "ats": stage.ats?.toIso8601String(),
                                 "atf": stage.atf?.toIso8601String(),
                                 "cancelled": stage.cancelled,
@@ -261,23 +262,49 @@ class _BerthsWidgetState extends State<BerthsWidget> {
                         : null,
                     child: const Text("OK")),
               ],
-              content: DropdownButton(
-                value: fenceId,
-                dropdownColor: Theme.of(context).cardColor,
-                isExpanded: true,
-                hint: Text("Selecionar berço", style: Theme.of(context).textTheme.bodyText2),
-                items: snapshot.data!
-                    .map((berth) => DropdownMenuItem(
-                          value: berth.fence_id,
-                          child: Text(berth.berth_name, style: Theme.of(context).textTheme.bodyText2),
-                        ))
-                    .toList(),
-                onChanged: (int? value) {
+              content: DropdownSearch<Berth>(
+                selectedItem: selectedBerth,
+                items: snapshot.data!,
+                itemAsString: (Berth berth) => berth.berth_name,
+                filterFn: (berth, filter) => berth.berth_name.toLowerCase().contains(filter.toLowerCase()),
+                dropdownDecoratorProps: const DropDownDecoratorProps(
+                  dropdownSearchDecoration: InputDecoration(
+                    labelText: "Selecionar berço",
+                  ),
+                ),
+                popupProps: PopupProps.menu(
+                  searchDelay: Duration.zero,
+                  showSearchBox: true,
+                  searchFieldProps: TextFieldProps(
+                    decoration: InputDecoration(
+                      hintText: "Pesquisar",
+                      hintStyle: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+                onChanged: (Berth? value) {
                   setState(() {
-                    fenceId = value;
+                    selectedBerth = value;
                   });
                 },
               ),
+              // DropdownButton(
+              //   value: fenceId,
+              //   dropdownColor: Theme.of(context).cardColor,
+              //   isExpanded: true,
+              //   hint: Text("Selecionar berço", style: Theme.of(context).textTheme.bodyMedium),
+              //   items: snapshot.data!
+              //       .map((berth) => DropdownMenuItem(
+              //             value: berth.fence_id,
+              //             child: Text(berth.berth_name, style: Theme.of(context).textTheme.bodyMedium),
+              //           ))
+              //       .toList(),
+              //   onChanged: (int? value) {
+              //     setState(() {
+              //       fenceId = value;
+              //     });
+              //   },
+              // ),
             );
           } else {
             return const Center(

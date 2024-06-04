@@ -19,7 +19,7 @@ const String _portCode = "BRSSZ";
 //   }
 // }
 
-class RequestInterface {
+mixin class RequestInterface {
   // static Future<dynamic> _makeMultipartRequest(String method, String route,
   //     Map fields, List<http.MultipartFile> files) async {
   //   var headers = {
@@ -113,7 +113,12 @@ class RequestInterface {
 class VoyageInterface with RequestInterface {
   static Future<List<Voyage>> getVoyages() async {
     var lineup = await RequestInterface._makeRequest("GET", "/voyages/lineup/$_portCode");
-    return (lineup as List).map((dynamic v) => Voyage.fromMap(v)).toList();
+    var openMoorings = (await RequestInterface._makeRequest("GET", "/voyages/open-moorings/$_portCode") as List)
+        .map((e) => e["voyage_id"]);
+
+    return (lineup as List)
+        .map((dynamic v) => Voyage.fromMap({...v, "hasOpenMoorings": openMoorings.contains(v["voyage_id"])}))
+        .toList();
   }
 
   static Future<dynamic> getVoyage(int voyageId) async {
@@ -131,6 +136,11 @@ class VoyageInterface with RequestInterface {
 
   static Future<dynamic> patchStage(int stageId, Map<String, dynamic> data) async {
     return RequestInterface._makeRequest("PATCH", "/voyages/stages/$stageId", jsonEncode(data));
+  }
+
+  static Future<Stage> getVoyagesWithOpenMoorings() async {
+    var stage = await RequestInterface._makeRequest("GET", "/voyages/stages/$_portCode");
+    return Stage.fromMap(stage);
   }
 }
 
@@ -227,7 +237,7 @@ class AuthInterface {
   static Future<dynamic> signInWithWebUI() async {
     await logOut();
     try {
-      SignInResult res = await Amplify.Auth.signInWithWebUI();
+      // SignInResult res = await Amplify.Auth.signInWithWebUI();
       if (await isSignedIn()) {
         // var userData = await getUserInfo();
         return {"status": true};
@@ -238,19 +248,35 @@ class AuthInterface {
     }
   }
 
+  static Future<dynamic> signIn(String username, String password) async {
+    await logOut();
+    try {
+      await Amplify.Auth.signIn(username: username, password: password);
+      if (await isSignedIn()) {
+        // var userData = await getUserInfo();
+        return {"status": true};
+      }
+      return {"status": false};
+    } on NotAuthorizedException {
+      return {"status": false, "message": "E-mail ou senha incorreto."};
+    } catch (e) {
+      return {"status": false, "message": e.toString()};
+    }
+  }
+
   static Future<void> logOut() async {
     try {
       if (await isSignedIn()) {
         await Amplify.Auth.signOut();
       }
     } catch (e) {
-      print(e);
+      // print(e);
     }
   }
 
   static Future<dynamic> getUserInfo() async {
     var result = await Amplify.Auth.fetchUserAttributes();
-    print(result);
+    // print(result);
     return result;
   }
 

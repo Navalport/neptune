@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mooringapp/interfaces.dart';
@@ -124,10 +123,11 @@ class _TethersWidgetState extends State<TethersWidget> {
                                           padding: const EdgeInsets.all(4),
                                           child: ElevatedButton(
                                             onPressed: !(mooring?.tethers.any((tether) =>
-                                                        tether.hawser_id == _hawser?.hawser_id &&
-                                                        tether.bollard_id == _bollard?.bollard_id &&
-                                                        tether.pristine == true) ??
-                                                    false)
+                                                            tether.hawser_id == _hawser?.hawser_id &&
+                                                            tether.bollard_id == _bollard?.bollard_id &&
+                                                            tether.pristine == true) ??
+                                                        false) &&
+                                                    mooring?.untie_finished_at == null
                                                 ? () async {
                                                     if (_formKey.currentState!.validate()) {
                                                       setState(() {
@@ -455,41 +455,41 @@ class _TethersWidgetState extends State<TethersWidget> {
     return widget.bollards.firstWhere((bollard) => bollard.bollard_id == id);
   }
 
-  Future<void> _showDeleteDialog(Tether tether, int voyageId) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Confirmar deleção',
-            style: Theme.of(context).textTheme.bodyText1,
-          ),
-          // content: Text(error),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancelar', style: Theme.of(context).textTheme.bodyText1),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Sim', style: Theme.of(context).textTheme.bodyText1),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                setState(() {
-                  _inProgress = true;
-                });
-                await DockingsInterface.deleteTether(tether.tether_id);
-                await stage$.refresh(voyageId);
-                setState(() {
-                  _inProgress = false;
-                });
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Future<void> _showDeleteDialog(Tether tether, int voyageId) async {
+  //   return showDialog<void>(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: Text(
+  //           'Confirmar deleção',
+  //           style: Theme.of(context).textTheme.bodyLarge,
+  //         ),
+  //         // content: Text(error),
+  //         actions: <Widget>[
+  //           TextButton(
+  //             child: Text('Cancelar', style: Theme.of(context).textTheme.bodyLarge),
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //           ),
+  //           TextButton(
+  //             child: Text('Sim', style: Theme.of(context).textTheme.bodyLarge),
+  //             onPressed: () async {
+  //               Navigator.of(context).pop();
+  //               setState(() {
+  //                 _inProgress = true;
+  //               });
+  //               await DockingsInterface.deleteTether(tether.tether_id);
+  //               await stage$.refresh(voyageId);
+  //               setState(() {
+  //                 _inProgress = false;
+  //               });
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 }
